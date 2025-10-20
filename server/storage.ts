@@ -77,7 +77,7 @@ export class MemStorage implements IStorage {
         name: org.name,
         mission: org.mission,
         category: org.category,
-        verified: org.verified,
+        verified: org.verified ?? 1,
       };
       this.organizations.set(id, organization);
     });
