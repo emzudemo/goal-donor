@@ -16,6 +16,39 @@ interface CreateGoalDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const getDeadlineDate = (option: string): Date => {
+  const now = new Date();
+  const date = new Date(now);
+  
+  switch (option) {
+    case "this-week":
+      // End of this week (Sunday)
+      const daysUntilSunday = 7 - now.getDay();
+      date.setDate(now.getDate() + daysUntilSunday);
+      break;
+    case "next-week":
+      // End of next week (Sunday)
+      const daysUntilNextSunday = 7 - now.getDay() + 7;
+      date.setDate(now.getDate() + daysUntilNextSunday);
+      break;
+    case "this-month":
+      // End of this month
+      date.setMonth(now.getMonth() + 1, 0);
+      break;
+    case "next-month":
+      // End of next month
+      date.setMonth(now.getMonth() + 2, 0);
+      break;
+  }
+  
+  return date;
+};
+
+const formatDeadlineOption = (option: string): string => {
+  const date = getDeadlineDate(option);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -104,7 +137,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
       progress: 0,
       target: parseFloat(formData.target),
       unit: formData.unit,
-      deadline: new Date(formData.deadline),
+      deadline: getDeadlineDate(formData.deadline),
       pledgeAmount: parseFloat(formData.pledgeAmount),
       status: "active",
     };
@@ -171,18 +204,17 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
 
             <div className="space-y-2">
               <Label htmlFor="deadline">Deadline</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="deadline"
-                  type="date"
-                  className="pl-10"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
-                  data-testid="input-goal-deadline"
-                />
-              </div>
+              <Select value={formData.deadline} onValueChange={(value) => setFormData({ ...formData, deadline: value })}>
+                <SelectTrigger data-testid="select-goal-deadline">
+                  <SelectValue placeholder="Select deadline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="this-week">This Week ({formatDeadlineOption("this-week")})</SelectItem>
+                  <SelectItem value="next-week">Next Week ({formatDeadlineOption("next-week")})</SelectItem>
+                  <SelectItem value="this-month">This Month ({formatDeadlineOption("this-month")})</SelectItem>
+                  <SelectItem value="next-month">Next Month ({formatDeadlineOption("next-month")})</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         )}
@@ -217,7 +249,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
               <div className="space-y-2 text-sm">
                 <p><span className="text-muted-foreground">Goal:</span> {formData.title}</p>
                 <p><span className="text-muted-foreground">Target:</span> {formData.target} {formData.unit}</p>
-                <p><span className="text-muted-foreground">Deadline:</span> {new Date(formData.deadline).toLocaleDateString()}</p>
+                <p><span className="text-muted-foreground">Deadline:</span> {formData.deadline ? getDeadlineDate(formData.deadline).toLocaleDateString() : ""}</p>
                 <p><span className="text-muted-foreground">Supporting:</span> {selectedOrg?.name}</p>
               </div>
             </div>
