@@ -4,9 +4,20 @@ import { storage } from "./storage";
 import { insertGoalSchema, insertOrganizationSchema } from "@shared/schema";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-09-30.clover",
-});
+// Lazy initialization of Stripe to handle missing secrets gracefully
+let stripe: Stripe | null = null;
+
+function getStripeClient(): Stripe {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-09-30.clover",
+    });
+  }
+  return stripe;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -95,9 +106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe payment intent creation
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
+      const stripeClient = getStripeClient();
       const { amount, goalId } = req.body;
       
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await stripeClient.paymentIntents.create({
         amount: amount * 100, // Convert to cents
         currency: "usd",
         automatic_payment_methods: {
@@ -118,13 +130,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Process failed goal donation
   app.post("/api/goals/:id/process-donation", async (req, res) => {
     try {
+      const stripeClient = getStripeClient();
       const goal = await storage.getGoal(req.params.id);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
 
       // Create payment intent for the pledge amount
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await stripeClient.paymentIntents.create({
         amount: goal.pledgeAmount * 100,
         currency: "usd",
         automatic_payment_methods: {

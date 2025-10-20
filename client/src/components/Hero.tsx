@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import heroImage from "@assets/generated_images/Runner_celebrating_goal_achievement_5782294c.png";
 import { ArrowRight } from "lucide-react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 export function Hero() {
+  const [, setLocation] = useLocation();
+  
   return (
     <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden">
       <div 
@@ -20,17 +22,16 @@ export function Hero() {
           Set ambitious goals, support causes you believe in, and hold yourself accountable. When you commit, everyone wins.
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
-          <Link href="/dashboard">
-            <Button 
-              size="lg" 
-              variant="default"
-              data-testid="button-start-goal"
-              className="text-lg px-8"
-            >
-              Start Your First Goal
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            variant="default"
+            onClick={() => setLocation("/dashboard")}
+            className="text-lg px-8"
+            data-testid="button-start-goal"
+          >
+            Start Your First Goal
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
           <Button 
             size="lg" 
             variant="outline"

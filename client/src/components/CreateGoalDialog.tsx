@@ -36,10 +36,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
 
   const createGoalMutation = useMutation({
     mutationFn: async (data: InsertGoal) => {
-      return await apiRequest("/api/goals", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("POST", "/api/goals", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });

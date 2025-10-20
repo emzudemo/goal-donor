@@ -21,10 +21,7 @@ export function UpdateProgressDialog({ open, onOpenChange, goal }: UpdateProgres
 
   const updateProgressMutation = useMutation({
     mutationFn: async (newProgress: number) => {
-      return await apiRequest(`/api/goals/${goal.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ progress: newProgress }),
-      });
+      return await apiRequest("PATCH", `/api/goals/${goal.id}`, { progress: newProgress });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
