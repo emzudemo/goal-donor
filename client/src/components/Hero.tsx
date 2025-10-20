@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import heroImage from "@assets/generated_images/Runner_celebrating_goal_achievement_5782294c.png";
 import { ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 
 export function Hero() {
   return (
@@ -19,20 +20,23 @@ export function Hero() {
           Set ambitious goals, support causes you believe in, and hold yourself accountable. When you commit, everyone wins.
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
-          <Button 
-            size="lg" 
-            variant="default"
-            data-testid="button-start-goal"
-            className="text-lg px-8"
-          >
-            Start Your First Goal
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <Link href="/dashboard">
+            <Button 
+              size="lg" 
+              variant="default"
+              data-testid="button-start-goal"
+              className="text-lg px-8"
+            >
+              Start Your First Goal
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
           <Button 
             size="lg" 
             variant="outline"
             data-testid="button-how-it-works"
             className="text-lg px-8 bg-background/20 backdrop-blur-sm border-white/30 text-white hover:bg-background/30"
+            onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
           >
             How It Works
           </Button>

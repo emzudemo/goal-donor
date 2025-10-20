@@ -13,6 +13,7 @@ interface GoalCardProps {
   daysRemaining: number;
   pledgeAmount: number;
   status: "active" | "approaching" | "completed" | "failed";
+  onUpdateProgress?: () => void;
 }
 
 export function GoalCard({
@@ -24,6 +25,7 @@ export function GoalCard({
   daysRemaining,
   pledgeAmount,
   status,
+  onUpdateProgress,
 }: GoalCardProps) {
   const percentage = Math.round((progress / target) * 100);
   const isUrgent = daysRemaining <= 3 && status === "active";
@@ -66,22 +68,25 @@ export function GoalCard({
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <Button 
-            className="flex-1" 
-            variant="outline"
-            data-testid="button-update-progress"
-          >
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Update Progress
-          </Button>
-          <Button 
-            variant="secondary"
-            data-testid="button-view-details"
-          >
-            Details
-          </Button>
-        </div>
+        {status !== "completed" && onUpdateProgress && (
+          <div className="flex gap-2">
+            <Button 
+              className="flex-1" 
+              variant="outline"
+              onClick={onUpdateProgress}
+              data-testid="button-update-progress"
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Update Progress
+            </Button>
+            <Button 
+              variant="secondary"
+              data-testid="button-view-details"
+            >
+              Details
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
