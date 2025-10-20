@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -16,3 +16,39 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const organizations = pgTable("organizations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  mission: text("mission").notNull(),
+  category: text("category").notNull(),
+  verified: integer("verified").notNull().default(1),
+});
+
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
+  id: true,
+});
+
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+export type Organization = typeof organizations.$inferSelect;
+
+export const goals = pgTable("goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  organizationId: varchar("organization_id").notNull(),
+  progress: real("progress").notNull().default(0),
+  target: real("target").notNull(),
+  unit: text("unit").notNull(),
+  deadline: timestamp("deadline").notNull(),
+  pledgeAmount: integer("pledge_amount").notNull(),
+  status: text("status").notNull().default("active"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+});
+
+export const insertGoalSchema = createInsertSchema(goals).omit({
+  id: true,
+  stripePaymentIntentId: true,
+});
+
+export type InsertGoal = z.infer<typeof insertGoalSchema>;
+export type Goal = typeof goals.$inferSelect;
