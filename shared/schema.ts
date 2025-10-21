@@ -48,6 +48,8 @@ export const goals = pgTable("goals", {
 export const insertGoalSchema = createInsertSchema(goals).omit({
   id: true,
   stripePaymentIntentId: true,
+}).extend({
+  deadline: z.coerce.date(),
 });
 
 export type InsertGoal = z.infer<typeof insertGoalSchema>;

@@ -137,7 +137,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
       progress: 0,
       target: parseFloat(formData.target),
       unit: formData.unit,
-      deadline: getDeadlineDate(formData.deadline),
+      deadline: getDeadlineDate(formData.deadline).toISOString() as any,
       pledgeAmount: parseFloat(formData.pledgeAmount),
       status: "active",
     };
