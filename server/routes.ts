@@ -67,10 +67,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/goals", async (req, res) => {
     try {
+      console.log("Received goal data:", JSON.stringify(req.body, null, 2));
       const validatedData = insertGoalSchema.parse(req.body);
       const goal = await storage.createGoal(validatedData);
       res.status(201).json(goal);
     } catch (error) {
+      console.error("Goal validation error:", error);
       if (error instanceof Error) {
         res.status(400).json({ error: error.message });
       } else {

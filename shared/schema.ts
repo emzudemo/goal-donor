@@ -50,6 +50,9 @@ export const insertGoalSchema = createInsertSchema(goals).omit({
   stripePaymentIntentId: true,
 }).extend({
   deadline: z.coerce.date(),
+  pledgeAmount: z.coerce.number().int(),
+  progress: z.coerce.number(),
+  target: z.coerce.number(),
 });
 
 export type InsertGoal = z.infer<typeof insertGoalSchema>;
