@@ -57,3 +57,20 @@ export const insertGoalSchema = createInsertSchema(goals).omit({
 
 export type InsertGoal = z.infer<typeof insertGoalSchema>;
 export type Goal = typeof goals.$inferSelect;
+
+export const stravaConnections = pgTable("strava_connections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  athleteId: varchar("athlete_id").notNull().unique(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  athleteName: text("athlete_name").notNull(),
+  athleteProfileUrl: text("athlete_profile_url"),
+});
+
+export const insertStravaConnectionSchema = createInsertSchema(stravaConnections).omit({
+  id: true,
+});
+
+export type InsertStravaConnection = z.infer<typeof insertStravaConnectionSchema>;
+export type StravaConnection = typeof stravaConnections.$inferSelect;

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Organization, type InsertOrganization, type Goal, type InsertGoal } from "@shared/schema";
+import { type User, type InsertUser, type Organization, type InsertOrganization, type Goal, type InsertGoal, type StravaConnection, type InsertStravaConnection } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -15,17 +15,23 @@ export interface IStorage {
   createGoal(goal: InsertGoal): Promise<Goal>;
   updateGoal(id: string, updates: Partial<Goal>): Promise<Goal | undefined>;
   deleteGoal(id: string): Promise<boolean>;
+  
+  getStravaConnection(athleteId: string): Promise<StravaConnection | undefined>;
+  upsertStravaConnection(connection: InsertStravaConnection): Promise<StravaConnection>;
+  deleteStravaConnection(athleteId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private organizations: Map<string, Organization>;
   private goals: Map<string, Goal>;
+  private stravaConnections: Map<string, StravaConnection>;
 
   constructor() {
     this.users = new Map();
     this.organizations = new Map();
     this.goals = new Map();
+    this.stravaConnections = new Map();
     
     this.seedOrganizations();
   }
@@ -158,6 +164,29 @@ export class MemStorage implements IStorage {
 
   async deleteGoal(id: string): Promise<boolean> {
     return this.goals.delete(id);
+  }
+
+  async getStravaConnection(athleteId: string): Promise<StravaConnection | undefined> {
+    return this.stravaConnections.get(athleteId);
+  }
+
+  async upsertStravaConnection(insertConnection: InsertStravaConnection): Promise<StravaConnection> {
+    const existing = this.stravaConnections.get(insertConnection.athleteId);
+    const connection: StravaConnection = {
+      id: existing?.id ?? randomUUID(),
+      athleteId: insertConnection.athleteId,
+      accessToken: insertConnection.accessToken,
+      refreshToken: insertConnection.refreshToken,
+      expiresAt: insertConnection.expiresAt,
+      athleteName: insertConnection.athleteName,
+      athleteProfileUrl: insertConnection.athleteProfileUrl ?? null,
+    };
+    this.stravaConnections.set(insertConnection.athleteId, connection);
+    return connection;
+  }
+
+  async deleteStravaConnection(athleteId: string): Promise<boolean> {
+    return this.stravaConnections.delete(athleteId);
   }
 }
 

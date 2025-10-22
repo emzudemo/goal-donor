@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GoalCard } from "./GoalCard";
 import { CreateGoalDialog } from "./CreateGoalDialog";
 import { UpdateProgressDialog } from "./UpdateProgressDialog";
+import { StravaConnect } from "./StravaConnect";
 import { Plus, Target, TrendingUp, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { type Goal, type Organization } from "@shared/schema";
@@ -110,6 +111,10 @@ export function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <div className="mb-8">
+          <StravaConnect />
+        </div>
         
         {goals.length === 0 ? (
           <div className="text-center py-16">
@@ -128,6 +133,7 @@ export function Dashboard() {
             {goals.map((goal) => (
               <GoalCard
                 key={goal.id}
+                goalId={goal.id}
                 title={goal.title}
                 organization={getOrganizationName(goal.organizationId)}
                 progress={goal.progress}

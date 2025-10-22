@@ -19,6 +19,65 @@ function getStripeClient(): Stripe {
   return stripe;
 }
 
+// Strava configuration
+const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID || "";
+const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET || "";
+const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
+const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
+const STRAVA_API_URL = "https://www.strava.com/api/v3";
+
+function validateStravaConfig() {
+  if (!STRAVA_CLIENT_ID || !STRAVA_CLIENT_SECRET) {
+    throw new Error("Strava configuration missing. Please set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables.");
+  }
+}
+
+// Helper function to refresh Strava access token
+async function refreshStravaToken(refreshToken: string) {
+  const response = await fetch(STRAVA_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: STRAVA_CLIENT_ID,
+      client_secret: STRAVA_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to refresh Strava token");
+  }
+
+  return await response.json();
+}
+
+// Helper function to get valid access token
+async function getValidStravaToken(athleteId: string) {
+  const connection = await storage.getStravaConnection(athleteId);
+  if (!connection) {
+    throw new Error("Strava connection not found");
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(connection.expiresAt);
+
+  if (now >= expiresAt) {
+    const tokenData = await refreshStravaToken(connection.refreshToken);
+    const updatedConnection = await storage.upsertStravaConnection({
+      athleteId: connection.athleteId,
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresAt: new Date(tokenData.expires_at * 1000),
+      athleteName: connection.athleteName,
+      athleteProfileUrl: connection.athleteProfileUrl,
+    });
+    return updatedConnection.accessToken;
+  }
+
+  return connection.accessToken;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Organizations routes
@@ -163,6 +222,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing donation:", error);
       res.status(500).json({ error: "Failed to process donation" });
+    }
+  });
+
+  // Strava OAuth routes
+  app.get("/api/strava/connect", (req, res) => {
+    try {
+      validateStravaConfig();
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
+      const authUrl = `${STRAVA_AUTH_URL}?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all&approval_prompt=auto`;
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error("Strava configuration error:", error);
+      res.redirect("/?strava=config_error");
+    }
+  });
+
+  app.get("/api/strava/callback", async (req, res) => {
+    const { code } = req.query;
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).send("Missing authorization code");
+    }
+
+    try {
+      const response = await fetch(STRAVA_TOKEN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: STRAVA_CLIENT_ID,
+          client_secret: STRAVA_CLIENT_SECRET,
+          code: code,
+          grant_type: "authorization_code",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to exchange code for token");
+      }
+
+      const data = await response.json();
+
+      const athleteId = String(data.athlete.id);
+      
+      await storage.upsertStravaConnection({
+        athleteId,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: new Date(data.expires_at * 1000),
+        athleteName: `${data.athlete.firstname} ${data.athlete.lastname}`,
+        athleteProfileUrl: data.athlete.profile,
+      });
+
+      res.redirect(`/?strava=connected&athleteId=${athleteId}`);
+    } catch (error) {
+      console.error("Strava OAuth error:", error);
+      res.redirect("/?strava=error");
+    }
+  });
+
+  app.get("/api/strava/status", async (req, res) => {
+    const { athleteId } = req.query;
+    
+    if (!athleteId || typeof athleteId !== 'string') {
+      return res.json({ connected: false });
+    }
+
+    const connection = await storage.getStravaConnection(athleteId);
+    res.json({ 
+      connected: !!connection,
+      athleteName: connection?.athleteName,
+      athleteProfileUrl: connection?.athleteProfileUrl,
+    });
+  });
+
+  app.post("/api/strava/disconnect", async (req, res) => {
+    try {
+      const { athleteId } = req.body;
+      if (!athleteId) {
+        return res.status(400).json({ error: "Missing athleteId" });
+      }
+
+      await storage.deleteStravaConnection(athleteId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error disconnecting Strava:", error);
+      res.status(500).json({ error: "Failed to disconnect Strava" });
+    }
+  });
+
+  app.post("/api/strava/sync/:goalId", async (req, res) => {
+    try {
+      const { goalId } = req.params;
+      const { athleteId } = req.body;
+
+      if (!athleteId) {
+        return res.status(400).json({ error: "Missing athleteId" });
+      }
+
+      const goal = await storage.getGoal(goalId);
+      if (!goal) {
+        return res.status(404).json({ error: "Goal not found" });
+      }
+
+      const accessToken = await getValidStravaToken(athleteId);
+
+      const after = Math.floor(new Date(goal.deadline).getTime() / 1000) - (30 * 24 * 60 * 60);
+      const activitiesResponse = await fetch(
+        `${STRAVA_API_URL}/athlete/activities?after=${after}&per_page=100`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (!activitiesResponse.ok) {
+        throw new Error("Failed to fetch Strava activities");
+      }
+
+      const activities = await activitiesResponse.json();
+
+      let totalDistance = 0;
+      if (goal.unit === "km") {
+        totalDistance = activities.reduce((sum: number, activity: any) => 
+          sum + (activity.distance / 1000), 0
+        );
+      } else if (goal.unit === "miles") {
+        totalDistance = activities.reduce((sum: number, activity: any) => 
+          sum + (activity.distance / 1609.34), 0
+        );
+      }
+
+      const updatedGoal = await storage.updateGoal(goalId, {
+        progress: Math.round(totalDistance * 100) / 100,
+      });
+
+      res.json(updatedGoal);
+    } catch (error) {
+      console.error("Error syncing Strava data:", error);
+      res.status(500).json({ error: "Failed to sync Strava data" });
     }
   });
 

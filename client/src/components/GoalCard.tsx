@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, TrendingUp, RefreshCw } from "lucide-react";
+import { SiStrava } from "react-icons/si";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface GoalCardProps {
+  goalId: string;
   title: string;
   organization: string;
   progress: number;
@@ -17,6 +22,7 @@ interface GoalCardProps {
 }
 
 export function GoalCard({
+  goalId,
   title,
   organization,
   progress,
@@ -27,8 +33,50 @@ export function GoalCard({
   status,
   onUpdateProgress,
 }: GoalCardProps) {
+  const [syncing, setSyncing] = useState(false);
+  const { toast } = useToast();
   const percentage = Math.round((progress / target) * 100);
   const isUrgent = daysRemaining <= 3 && status === "active";
+
+  const handleStravaSync = async () => {
+    const athleteId = localStorage.getItem("stravaAthleteId");
+    if (!athleteId) {
+      toast({
+        title: "Strava Not Connected",
+        description: "Please connect your Strava account first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const response = await fetch(`/api/strava/sync/${goalId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ athleteId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to sync");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      toast({
+        title: "Synced!",
+        description: "Your progress has been updated from Strava.",
+      });
+    } catch (error) {
+      console.error("Sync error:", error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync with Strava. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
   
   return (
     <Card 
@@ -69,7 +117,7 @@ export function GoalCard({
         </div>
         
         {status !== "completed" && onUpdateProgress && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               className="flex-1" 
               variant="outline"
@@ -79,12 +127,21 @@ export function GoalCard({
               <TrendingUp className="h-4 w-4 mr-2" />
               Update Progress
             </Button>
-            <Button 
-              variant="secondary"
-              data-testid="button-view-details"
-            >
-              Details
-            </Button>
+            {(unit === "km" || unit === "miles") && (
+              <Button
+                variant="outline"
+                onClick={handleStravaSync}
+                disabled={syncing}
+                data-testid="button-sync-strava"
+              >
+                {syncing ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <SiStrava className="h-4 w-4 mr-2 text-[#FC4C02]" />
+                )}
+                {syncing ? "Syncing..." : "Sync Strava"}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
