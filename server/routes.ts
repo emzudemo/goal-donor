@@ -242,13 +242,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/strava/callback", async (req, res) => {
-    const { code } = req.query;
+    console.log("Strava callback received! Query params:", req.query);
+    const { code, error } = req.query;
+
+    if (error) {
+      console.error("Strava authorization error:", error);
+      return res.redirect("/?strava=error");
+    }
 
     if (!code || typeof code !== 'string') {
+      console.error("Missing authorization code");
       return res.status(400).send("Missing authorization code");
     }
 
     try {
+      console.log("Exchanging code for tokens...");
       const response = await fetch(STRAVA_TOKEN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -261,10 +269,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Token exchange failed:", response.status, errorText);
         throw new Error("Failed to exchange code for token");
       }
 
       const data = await response.json();
+      console.log("Tokens received, athlete ID:", data.athlete.id);
 
       const athleteId = String(data.athlete.id);
       
@@ -277,6 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         athleteProfileUrl: data.athlete.profile,
       });
 
+      console.log("Strava connection saved successfully");
       res.redirect(`/?strava=connected&athleteId=${athleteId}`);
     } catch (error) {
       console.error("Strava OAuth error:", error);
