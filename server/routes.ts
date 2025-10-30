@@ -229,7 +229,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/strava/connect", (req, res) => {
     try {
       validateStravaConfig();
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/strava/callback`;
+      // Use https for Replit (req.protocol returns http behind proxy)
+      const protocol = req.get('host')?.includes('replit.dev') ? 'https' : req.protocol;
+      const redirectUri = `${protocol}://${req.get('host')}/api/strava/callback`;
+      console.log("Strava OAuth redirect URI:", redirectUri);
       const authUrl = `${STRAVA_AUTH_URL}?client_id=${STRAVA_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all&approval_prompt=auto`;
       res.redirect(authUrl);
     } catch (error) {
