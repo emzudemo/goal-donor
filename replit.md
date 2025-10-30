@@ -178,6 +178,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 30, 2025 - Strava Sync Fix
+- Fixed critical bug in Strava activity sync endpoint
+- Changed activity fetch window from "30 days before deadline" to "from goal creation date (or last 90 days)"
+- Added `createdAt` timestamp to goals table for better tracking
+- Implemented comprehensive logging throughout sync process for debugging
+- Improved error messages (e.g., "Please connect your Strava account first")
+- Activities now sync correctly regardless of goal deadline
+
 ### October 30, 2025 - Authentication & Database Persistence
 - Upgraded from in-memory storage to PostgreSQL with Drizzle ORM
 - Implemented Replit Auth with support for Google, Apple, GitHub, X, and email/password login
