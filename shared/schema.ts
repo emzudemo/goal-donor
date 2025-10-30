@@ -1,22 +1,36 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table - Required for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table - Required for Replit Auth
+// Supports login with Google, Apple, GitHub, X, and email/password
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// Organizations table
 export const organizations = pgTable("organizations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -32,8 +46,10 @@ export const insertOrganizationSchema = createInsertSchema(organizations).omit({
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type Organization = typeof organizations.$inferSelect;
 
+// Goals table - now linked to users
 export const goals = pgTable("goals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
   title: text("title").notNull(),
   organizationId: varchar("organization_id").notNull(),
   progress: real("progress").notNull().default(0),
@@ -47,6 +63,7 @@ export const goals = pgTable("goals", {
 
 export const insertGoalSchema = createInsertSchema(goals).omit({
   id: true,
+  userId: true,
   stripePaymentIntentId: true,
 }).extend({
   deadline: z.coerce.date(),
@@ -58,8 +75,10 @@ export const insertGoalSchema = createInsertSchema(goals).omit({
 export type InsertGoal = z.infer<typeof insertGoalSchema>;
 export type Goal = typeof goals.$inferSelect;
 
+// Strava connections table - now linked to users
 export const stravaConnections = pgTable("strava_connections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
   athleteId: varchar("athlete_id").notNull().unique(),
   accessToken: text("access_token").notNull(),
   refreshToken: text("refresh_token").notNull(),
@@ -70,7 +89,32 @@ export const stravaConnections = pgTable("strava_connections", {
 
 export const insertStravaConnectionSchema = createInsertSchema(stravaConnections).omit({
   id: true,
+  userId: true,
 });
 
 export type InsertStravaConnection = z.infer<typeof insertStravaConnectionSchema>;
 export type StravaConnection = typeof stravaConnections.$inferSelect;
+
+// Relations - explicit modeling using Drizzle relations operator
+export const usersRelations = relations(users, ({ many }) => ({
+  goals: many(goals),
+  stravaConnection: many(stravaConnections),
+}));
+
+export const goalsRelations = relations(goals, ({ one }) => ({
+  user: one(users, {
+    fields: [goals.userId],
+    references: [users.id],
+  }),
+  organization: one(organizations, {
+    fields: [goals.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const stravaConnectionsRelations = relations(stravaConnections, ({ one }) => ({
+  user: one(users, {
+    fields: [stravaConnections.userId],
+    references: [users.id],
+  }),
+}));

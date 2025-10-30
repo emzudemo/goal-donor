@@ -15,22 +15,14 @@ interface StravaStatus {
 export function StravaConnect() {
   const [status, setStatus] = useState<StravaStatus>({ connected: false });
   const [loading, setLoading] = useState(true);
-  const [athleteId, setAthleteId] = useState<string>("");
   const { toast } = useToast();
 
   const checkStatus = async () => {
     setLoading(true);
     try {
-      const storedAthleteId = localStorage.getItem("stravaAthleteId") || "";
-      setAthleteId(storedAthleteId);
-      
-      if (storedAthleteId) {
-        const response = await fetch(`/api/strava/status?athleteId=${storedAthleteId}`);
-        const data = await response.json();
-        setStatus(data);
-      } else {
-        setStatus({ connected: false });
-      }
+      const response = await fetch("/api/strava/status");
+      const data = await response.json();
+      setStatus(data);
     } catch (error) {
       console.error("Error checking Strava status:", error);
       setStatus({ connected: false });
@@ -44,11 +36,6 @@ export function StravaConnect() {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("strava") === "connected") {
-      const athleteId = params.get("athleteId");
-      if (athleteId) {
-        localStorage.setItem("stravaAthleteId", athleteId);
-        setAthleteId(athleteId);
-      }
       toast({
         title: "Strava Connected!",
         description: "Your Strava account has been successfully connected.",
@@ -74,13 +61,10 @@ export function StravaConnect() {
       const response = await fetch("/api/strava/disconnect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ athleteId }),
       });
 
       if (response.ok) {
-        localStorage.removeItem("stravaAthleteId");
         setStatus({ connected: false });
-        setAthleteId("");
         toast({
           title: "Disconnected",
           description: "Your Strava account has been disconnected.",

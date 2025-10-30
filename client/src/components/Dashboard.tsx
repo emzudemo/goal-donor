@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GoalCard } from "./GoalCard";
 import { CreateGoalDialog } from "./CreateGoalDialog";
 import { UpdateProgressDialog } from "./UpdateProgressDialog";
 import { StravaConnect } from "./StravaConnect";
-import { Plus, Target, TrendingUp, DollarSign } from "lucide-react";
+import { Plus, Target, TrendingUp, DollarSign, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { type Goal, type Organization } from "@shared/schema";
 
 export function Dashboard() {
+  const { user } = useAuth();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -63,15 +66,37 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header with User Info */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">My Goals</h1>
-            <p className="text-muted-foreground">Track your progress and make an impact</p>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={user?.profileImageUrl || undefined} style={{ objectFit: 'cover' }} />
+              <AvatarFallback>
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-4xl font-bold">
+                {user?.firstName ? `${user.firstName}'s Goals` : 'My Goals'}
+              </h1>
+              <p className="text-muted-foreground">Track your progress and make an impact</p>
+            </div>
           </div>
-          <Button size="lg" onClick={() => setCreateDialogOpen(true)} data-testid="button-create-goal">
-            <Plus className="h-5 w-5 mr-2" />
-            Create New Goal
-          </Button>
+          <div className="flex gap-2">
+            <Button size="lg" onClick={() => setCreateDialogOpen(true)} data-testid="button-create-goal">
+              <Plus className="h-5 w-5 mr-2" />
+              Create New Goal
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => window.location.href = '/api/logout'}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-5 w-5 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
         
         <div className="grid md:grid-cols-3 gap-6 mb-12">

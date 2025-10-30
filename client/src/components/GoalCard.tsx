@@ -39,26 +39,16 @@ export function GoalCard({
   const isUrgent = daysRemaining <= 3 && status === "active";
 
   const handleStravaSync = async () => {
-    const athleteId = localStorage.getItem("stravaAthleteId");
-    if (!athleteId) {
-      toast({
-        title: "Strava Not Connected",
-        description: "Please connect your Strava account first.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSyncing(true);
     try {
       const response = await fetch(`/api/strava/sync/${goalId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ athleteId }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to sync");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to sync");
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
@@ -70,7 +60,7 @@ export function GoalCard({
       console.error("Sync error:", error);
       toast({
         title: "Sync Failed",
-        description: "Failed to sync with Strava. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to sync with Strava. Please try again.",
         variant: "destructive",
       });
     } finally {

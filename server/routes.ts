@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertGoalSchema, insertOrganizationSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import Stripe from "stripe";
 
 // Lazy initialization of Stripe to handle missing secrets gracefully
@@ -53,8 +54,8 @@ async function refreshStravaToken(refreshToken: string) {
 }
 
 // Helper function to get valid access token
-async function getValidStravaToken(athleteId: string) {
-  const connection = await storage.getStravaConnection(athleteId);
+async function getValidStravaToken(userId: string) {
+  const connection = await storage.getStravaConnection(userId);
   if (!connection) {
     throw new Error("Strava connection not found");
   }
@@ -71,7 +72,7 @@ async function getValidStravaToken(athleteId: string) {
       expiresAt: new Date(tokenData.expires_at * 1000),
       athleteName: connection.athleteName,
       athleteProfileUrl: connection.athleteProfileUrl,
-    });
+    }, userId);
     return updatedConnection.accessToken;
   }
 
@@ -79,8 +80,22 @@ async function getValidStravaToken(athleteId: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
-  // Organizations routes
+  // Setup Replit Auth - supports Google, Apple, GitHub, X, email/password
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Organizations routes (public)
   app.get("/api/organizations", async (req, res) => {
     try {
       const organizations = await storage.getAllOrganizations();
@@ -102,19 +117,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Goals routes
-  app.get("/api/goals", async (req, res) => {
+  // Goals routes (protected - user-specific)
+  app.get("/api/goals", isAuthenticated, async (req: any, res) => {
     try {
-      const goals = await storage.getAllGoals();
+      const userId = req.user.claims.sub;
+      const goals = await storage.getAllGoals(userId);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch goals" });
     }
   });
 
-  app.get("/api/goals/:id", async (req, res) => {
+  app.get("/api/goals/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const goal = await storage.getGoal(req.params.id);
+      const userId = req.user.claims.sub;
+      const goal = await storage.getGoal(req.params.id, userId);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -124,11 +141,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/goals", async (req, res) => {
+  app.post("/api/goals", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       console.log("Received goal data:", JSON.stringify(req.body, null, 2));
       const validatedData = insertGoalSchema.parse(req.body);
-      const goal = await storage.createGoal(validatedData);
+      const goal = await storage.createGoal(validatedData, userId);
       res.status(201).json(goal);
     } catch (error) {
       console.error("Goal validation error:", error);
@@ -140,9 +158,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/goals/:id", async (req, res) => {
+  app.patch("/api/goals/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const goal = await storage.updateGoal(req.params.id, req.body);
+      const userId = req.user.claims.sub;
+      const goal = await storage.updateGoal(req.params.id, userId, req.body);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -152,9 +171,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/goals/:id", async (req, res) => {
+  app.delete("/api/goals/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const deleted = await storage.deleteGoal(req.params.id);
+      const userId = req.user.claims.sub;
+      const deleted = await storage.deleteGoal(req.params.id, userId);
       if (!deleted) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -164,8 +184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stripe payment intent creation
-  app.post("/api/create-payment-intent", async (req, res) => {
+  // Stripe payment intent creation (protected)
+  app.post("/api/create-payment-intent", isAuthenticated, async (req, res) => {
     try {
       const stripeClient = getStripeClient();
       const { amount, goalId } = req.body;
@@ -188,11 +208,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process failed goal donation
-  app.post("/api/goals/:id/process-donation", async (req, res) => {
+  // Process failed goal donation (protected)
+  app.post("/api/goals/:id/process-donation", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const stripeClient = getStripeClient();
-      const goal = await storage.getGoal(req.params.id);
+      const goal = await storage.getGoal(req.params.id, userId);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
@@ -211,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Update goal with payment intent ID
-      await storage.updateGoal(goal.id, {
+      await storage.updateGoal(goal.id, userId, {
         stripePaymentIntentId: paymentIntent.id,
       });
 
@@ -225,8 +246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Strava OAuth routes
-  app.get("/api/strava/connect", (req, res) => {
+  // Strava OAuth routes (protected)
+  app.get("/api/strava/connect", isAuthenticated, (req, res) => {
     try {
       validateStravaConfig();
       // Use https for Replit (req.protocol returns http behind proxy)
@@ -241,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/strava/callback", async (req, res) => {
+  app.get("/api/strava/callback", isAuthenticated, async (req: any, res) => {
     console.log("Strava callback received! Query params:", req.query);
     const { code, error } = req.query;
 
@@ -256,6 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      const userId = req.user.claims.sub;
       console.log("Exchanging code for tokens...");
       const response = await fetch(STRAVA_TOKEN_URL, {
         method: "POST",
@@ -286,39 +308,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt: new Date(data.expires_at * 1000),
         athleteName: `${data.athlete.firstname} ${data.athlete.lastname}`,
         athleteProfileUrl: data.athlete.profile,
-      });
+      }, userId);
 
       console.log("Strava connection saved successfully");
-      res.redirect(`/?strava=connected&athleteId=${athleteId}`);
+      res.redirect(`/?strava=connected`);
     } catch (error) {
       console.error("Strava OAuth error:", error);
       res.redirect("/?strava=error");
     }
   });
 
-  app.get("/api/strava/status", async (req, res) => {
-    const { athleteId } = req.query;
-    
-    if (!athleteId || typeof athleteId !== 'string') {
-      return res.json({ connected: false });
+  app.get("/api/strava/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const connection = await storage.getStravaConnection(userId);
+      res.json({ 
+        connected: !!connection,
+        athleteName: connection?.athleteName,
+        athleteProfileUrl: connection?.athleteProfileUrl,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get Strava status" });
     }
-
-    const connection = await storage.getStravaConnection(athleteId);
-    res.json({ 
-      connected: !!connection,
-      athleteName: connection?.athleteName,
-      athleteProfileUrl: connection?.athleteProfileUrl,
-    });
   });
 
-  app.post("/api/strava/disconnect", async (req, res) => {
+  app.post("/api/strava/disconnect", isAuthenticated, async (req: any, res) => {
     try {
-      const { athleteId } = req.body;
-      if (!athleteId) {
-        return res.status(400).json({ error: "Missing athleteId" });
-      }
-
-      await storage.deleteStravaConnection(athleteId);
+      const userId = req.user.claims.sub;
+      await storage.deleteStravaConnection(userId);
       res.json({ success: true });
     } catch (error) {
       console.error("Error disconnecting Strava:", error);
@@ -326,21 +343,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/strava/sync/:goalId", async (req, res) => {
+  app.post("/api/strava/sync/:goalId", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { goalId } = req.params;
-      const { athleteId } = req.body;
 
-      if (!athleteId) {
-        return res.status(400).json({ error: "Missing athleteId" });
-      }
-
-      const goal = await storage.getGoal(goalId);
+      const goal = await storage.getGoal(goalId, userId);
       if (!goal) {
         return res.status(404).json({ error: "Goal not found" });
       }
 
-      const accessToken = await getValidStravaToken(athleteId);
+      const accessToken = await getValidStravaToken(userId);
 
       const after = Math.floor(new Date(goal.deadline).getTime() / 1000) - (30 * 24 * 60 * 60);
       const activitiesResponse = await fetch(
@@ -367,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      const updatedGoal = await storage.updateGoal(goalId, {
+      const updatedGoal = await storage.updateGoal(goalId, userId, {
         progress: Math.round(totalDistance * 100) / 100,
       });
 
