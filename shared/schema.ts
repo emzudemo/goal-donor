@@ -59,12 +59,14 @@ export const goals = pgTable("goals", {
   pledgeAmount: integer("pledge_amount").notNull(),
   status: text("status").notNull().default("active"),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertGoalSchema = createInsertSchema(goals).omit({
   id: true,
   userId: true,
   stripePaymentIntentId: true,
+  createdAt: true,
 }).extend({
   deadline: z.coerce.date(),
   pledgeAmount: z.coerce.number().int(),

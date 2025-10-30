@@ -348,14 +348,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { goalId } = req.params;
 
+      console.log(`[Strava Sync] Starting sync for goal ${goalId}, user ${userId}`);
+
       const goal = await storage.getGoal(goalId, userId);
       if (!goal) {
+        console.log(`[Strava Sync] Goal not found: ${goalId}`);
         return res.status(404).json({ error: "Goal not found" });
       }
 
-      const accessToken = await getValidStravaToken(userId);
+      console.log(`[Strava Sync] Goal found: ${goal.title}, unit: ${goal.unit}`);
 
-      const after = Math.floor(new Date(goal.deadline).getTime() / 1000) - (30 * 24 * 60 * 60);
+      // Check if Strava is connected
+      let accessToken: string;
+      try {
+        accessToken = await getValidStravaToken(userId);
+        console.log(`[Strava Sync] Got valid Strava token`);
+      } catch (error) {
+        console.log(`[Strava Sync] Strava not connected:`, error);
+        return res.status(400).json({ error: "Please connect your Strava account first" });
+      }
+
+      // Fetch activities from goal creation date (or last 90 days, whichever is more recent)
+      const goalCreationTime = goal.createdAt ? new Date(goal.createdAt).getTime() : Date.now();
+      const ninetyDaysAgo = Date.now() - (90 * 24 * 60 * 60 * 1000);
+      const afterTimestamp = Math.max(goalCreationTime, ninetyDaysAgo);
+      const after = Math.floor(afterTimestamp / 1000);
+
+      console.log(`[Strava Sync] Fetching activities after: ${new Date(afterTimestamp).toISOString()}`);
+
       const activitiesResponse = await fetch(
         `${STRAVA_API_URL}/athlete/activities?after=${after}&per_page=100`,
         {
@@ -364,10 +384,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       if (!activitiesResponse.ok) {
+        console.log(`[Strava Sync] Failed to fetch activities: ${activitiesResponse.status}`);
         throw new Error("Failed to fetch Strava activities");
       }
 
       const activities = await activitiesResponse.json();
+      console.log(`[Strava Sync] Fetched ${activities.length} activities`);
 
       let totalDistance = 0;
       if (goal.unit === "km") {
@@ -380,14 +402,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
+      console.log(`[Strava Sync] Calculated total distance: ${totalDistance} ${goal.unit}`);
+
       const updatedGoal = await storage.updateGoal(goalId, userId, {
         progress: Math.round(totalDistance * 100) / 100,
       });
 
+      if (!updatedGoal) {
+        throw new Error("Failed to update goal");
+      }
+
+      console.log(`[Strava Sync] Updated goal progress to: ${updatedGoal.progress}`);
+
       res.json(updatedGoal);
     } catch (error) {
-      console.error("Error syncing Strava data:", error);
-      res.status(500).json({ error: "Failed to sync Strava data" });
+      console.error("[Strava Sync] Error syncing Strava data:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to sync Strava data";
+      res.status(500).json({ error: errorMessage });
     }
   });
 
