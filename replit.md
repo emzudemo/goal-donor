@@ -32,9 +32,10 @@ Preferred communication style: Simple, everyday language.
 **Key Frontend Patterns:**
 - Component-based architecture with reusable UI components in `/client/src/components/ui`
 - Feature components in `/client/src/components` (Dashboard, GoalCard, etc.)
-- Page-level components in `/client/src/pages`
+- Page-level components in `/client/src/pages` (Landing for logged-out, Dashboard for logged-in)
 - Path aliases (@, @shared, @assets) for clean imports
-- Custom hooks for mobile detection and toast notifications
+- Custom hooks for authentication (useAuth), mobile detection, and toast notifications
+- Authentication-aware routing: Landing page shown to logged-out users, Dashboard to authenticated users
 
 ### Backend Architecture
 
@@ -52,30 +53,47 @@ Preferred communication style: Simple, everyday language.
 - `/server/vite.ts` - Development server setup with Vite middleware for HMR
 
 **API Endpoints:**
-- Goal CRUD operations (GET, POST, PATCH, DELETE at `/api/goals`)
-- Organization management (`/api/organizations`)
-- Strava OAuth flow and activity syncing (`/api/strava/*`)
-- Stripe payment intent creation (`/api/create-payment-intent`)
+- **Authentication:**
+  - POST `/api/login` - Initiates Replit Auth OIDC flow
+  - GET `/api/logout` - Destroys session and logs out user
+  - GET `/api/auth/user` - Returns current authenticated user info
+  - GET `/api/auth/callback` - OIDC callback endpoint
+- **Goals (Protected):**
+  - GET `/api/goals` - Returns goals for authenticated user
+  - POST `/api/goals` - Creates goal for authenticated user
+  - PATCH `/api/goals/:id` - Updates goal (user ownership verified)
+  - DELETE `/api/goals/:id` - Deletes goal (user ownership verified)
+- **Organizations:**
+  - GET `/api/organizations` - Returns all verified organizations
+- **Strava (Protected):**
+  - POST `/api/strava/connect` - Initiates Strava OAuth for authenticated user
+  - GET `/api/strava/callback` - OAuth callback, stores tokens linked to userId
+  - POST `/api/strava/sync/:goalId` - Syncs Strava activities for user's goal
+- **Stripe (Protected):**
+  - POST `/api/create-payment-intent` - Creates payment intent for user's goal
 
 **Data Storage Pattern:**
 - Storage interface (IStorage) defines contract for data operations
-- MemStorage implements in-memory storage for development/testing
-- Designed to be replaced with Drizzle ORM implementation for production
+- DatabaseStorage implements PostgreSQL-backed persistent storage using Drizzle ORM
+- All operations automatically filter by authenticated userId for data isolation
 - Schema definitions in `/shared/schema.ts` using Drizzle and Zod
 
 ### Database Schema
 
 **Core Tables:**
-- **users**: User authentication (id, username, password)
-- **organizations**: Charitable organizations (id, name, mission, category, verified status)
-- **goals**: User goals (id, title, organizationId, progress, target, unit, deadline, pledgeAmount, status, stripePaymentIntentId)
-- **stravaConnections**: Strava OAuth tokens (athleteId, accessToken, refreshToken, expiresAt)
+- **users**: User accounts (id serial, sub text unique for OAuth, email, firstName, lastName, profileImageUrl)
+- **sessions**: Session storage (sid primary key, sess jsonb, expire timestamp) managed by connect-pg-simple
+- **organizations**: Charitable organizations (id serial, name, mission, category, verified status)
+- **goals**: User goals (id serial, userId references users.id, title, organizationId, progress, target, unit, deadline, pledgeAmount, status, stripePaymentIntentId)
+- **stravaConnections**: Strava OAuth tokens (id serial, userId references users.id, athleteId, accessToken, refreshToken, expiresAt)
 
 **Design Decisions:**
-- UUID primary keys using `gen_random_uuid()` for distributed systems compatibility
+- Serial primary keys for PostgreSQL auto-increment
+- Foreign key constraints ensure referential integrity (userId links goals and Strava connections to users)
 - Zod schemas for runtime validation of inserts
 - Separate insert and select types for type safety
 - Verified flag on organizations for trust and credibility
+- User isolation enforced at storage layer - all queries automatically filter by userId
 
 ### External Dependencies
 
@@ -89,13 +107,15 @@ Preferred communication style: Simple, everyday language.
 - OAuth 2.0 flow for athlete authentication
 - Automatic token refresh using refresh tokens
 - Fetches athlete activities to update goal progress
-- Stores athlete ID in localStorage for session persistence
+- Strava connections linked to userId in database for persistence
 - Syncs running/cycling activities with goal progress (distance-based goals)
+- Environment variables: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
 
 **Design Rationale:**
 - Strava integration provides automatic, trustworthy progress tracking for fitness goals
 - Reduces manual entry and increases engagement
 - Token refresh ensures long-term connectivity without re-authentication
+- User-specific connections enable cross-device Strava sync
 
 **Third-Party UI Libraries:**
 - Radix UI for accessible, unstyled component primitives
@@ -111,15 +131,32 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Security
 
-**Current Implementation:**
-- Basic username/password authentication schema defined
-- Session management prepared with connect-pg-simple
-- No authentication currently enforced on routes (MVP phase)
+**Implemented Authentication System (October 2025):**
+- **Replit Auth (OpenID Connect)** integration with multiple identity providers:
+  - Google Login
+  - Apple Login
+  - GitHub Login
+  - X (Twitter) Login
+  - Email/Password Login
+- **Session-based authentication** using express-session with PostgreSQL session store (connect-pg-simple)
+- **Protected routes** using `isAuthenticated` middleware on all user-specific endpoints
+- **Automatic user creation** on first login via `/api/login` endpoint
+- **Secure logout** via `/api/logout` endpoint that destroys session
+- **Frontend authentication** managed by `useAuth` hook in `/client/src/hooks/useAuth.ts`
 
-**Future Considerations:**
-- Implement session-based authentication middleware
-- Add user context to goal and payment operations
-- Secure Strava and Stripe operations to authenticated users only
+**Security Architecture:**
+- All goal, Strava, and payment endpoints protected with authentication middleware
+- User ID derived from session claims (`req.session.claims.sub`)
+- Database operations automatically filter by userId to prevent cross-user data access
+- Session secret managed via SESSION_SECRET environment variable
+- HTTPS enforcement on Replit domains for OAuth redirect URIs
+
+**Authentication Files:**
+- `/server/replitAuth.ts` - Replit Auth setup and OIDC client configuration
+- `/server/routes.ts` - Auth routes and isAuthenticated middleware
+- `/client/src/hooks/useAuth.ts` - Frontend authentication state management
+- `/client/src/lib/authUtils.ts` - Auth utility functions
+- `/client/src/pages/Landing.tsx` - Landing page for logged-out users
 
 ### Build & Deployment
 
@@ -131,5 +168,23 @@ Preferred communication style: Simple, everyday language.
 **Production:**
 - Vite builds frontend to `/dist/public`
 - ESBuild bundles server to `/dist/index.js`
-- Environment variables required: DATABASE_URL, STRIPE_SECRET_KEY, STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
+- Environment variables required: 
+  - DATABASE_URL (PostgreSQL connection)
+  - SESSION_SECRET (session encryption)
+  - STRIPE_SECRET_KEY, VITE_STRIPE_PUBLIC_KEY (payment processing)
+  - STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET (fitness tracking)
 - Single entry point starts Express server serving both API and static frontend
+- Database migrations via Drizzle Kit: `npm run db:push`
+
+## Recent Changes
+
+### October 30, 2025 - Authentication & Database Persistence
+- Upgraded from in-memory storage to PostgreSQL with Drizzle ORM
+- Implemented Replit Auth with support for Google, Apple, GitHub, X, and email/password login
+- Added user accounts with session-based authentication
+- Protected all user-specific API endpoints with authentication middleware
+- Added Landing page for logged-out users with login options
+- Updated Dashboard to display user profile and logout functionality
+- Linked goals and Strava connections to user accounts via foreign keys
+- Implemented automatic user data isolation at storage layer
+- Goals and progress now persist across devices and sessions
