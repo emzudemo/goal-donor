@@ -55,3 +55,28 @@ Preferred communication style: Simple, everyday language.
 **Third-Party UI Libraries:** Radix UI, Shadcn/ui, React Icons, Lucide React.
 
 **Development Tools:** Replit plugins, TypeScript, ESBuild, Drizzle Kit for migrations.
+
+## Recent Changes
+
+### November 3, 2025 - Manual Sync Fallback for Production Deployments
+- **Public init-sync endpoint** (`GET /api/organizations/init-sync`) - manual fallback for deployment setup if auto-sync fails
+- **Enhanced error logging** - improved diagnostics with clear success/failure indicators (✓/✗) in startup logs
+- **Better error messages** - API errors now include sanitized details for troubleshooting
+- **Idempotent sync** - init-sync endpoint won't create duplicates, returns count if organizations already exist
+- **Deployment troubleshooting** - logs now include instructions to use manual sync endpoint when auto-sync fails
+
+### November 3, 2025 - OAuth Cleanup
+- Removed Google and GitHub OAuth buttons from landing page (not configured)
+- Simplified authentication UI to email/password only
+
+### November 3, 2025 - Production-Ready Betterplace.org Auto-Sync
+- **Protected sync endpoint** with authentication middleware - authenticated users can trigger `/api/organizations/sync`
+- **Auto-sync on server startup** - automatically fetches and syncs 50 betterplace.org projects if database is empty
+- **Refactored sync logic** into reusable `syncBetterplaceProjects()` function
+- **Graceful error handling** - startup continues even if Betterplace.org API is unavailable
+
+### November 3, 2025 - Complete German Localization and Euro Currency
+- **Translated all user interface components to German** for the German market
+- **Updated currency from USD ($) to Euro (€)** throughout the application
+- Translated components: Landing, Dashboard, CreateGoalDialog, GoalCard, StravaConnect, UpdateProgressDialog, FeaturedOrganizations
+- Integrated 50 real betterplace.org projects with images, locations, and progress tracking
