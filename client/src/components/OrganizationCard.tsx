@@ -5,7 +5,7 @@ import { CheckCircle2, MapPin, TrendingUp } from "lucide-react";
 
 interface OrganizationCardProps {
   name: string;
-  summary?: string;
+  summary?: string | null;
   mission: string;
   category: string;
   verified?: boolean;
