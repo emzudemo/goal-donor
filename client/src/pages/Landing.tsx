@@ -1,11 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Target, Heart, TrendingUp, Zap } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function Landing() {
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSignIn = async (provider: 'google' | 'github') => {
     try {
@@ -32,6 +39,72 @@ export default function Landing() {
     }
   };
 
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Sign up failed",
+          description: error.message,
+        });
+      } else if (data.user) {
+        toast({
+          title: "Success!",
+          description: "Please check your email to confirm your account.",
+        });
+        setEmail("");
+        setPassword("");
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Sign up failed",
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: error.message,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Sign in failed",
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -48,22 +121,131 @@ export default function Landing() {
               Turn your goals into meaningful impact. Set personal challenges, stay accountable, 
               and support charitable causes when you need extra motivation.
             </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button 
-                size="lg" 
-                onClick={() => handleSignIn('google')}
-                data-testid="button-login-google"
-              >
-                Sign in with Google
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => handleSignIn('github')}
-                data-testid="button-login-github"
-              >
-                Sign in with GitHub
-              </Button>
+
+            {/* Authentication Card */}
+            <div className="max-w-md mx-auto">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl text-center">Get Started</CardTitle>
+                  <CardDescription className="text-center">
+                    Sign up or sign in to start setting goals
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="signin" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
+                      <TabsTrigger value="signin" data-testid="tab-signin">Sign In</TabsTrigger>
+                      <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="signin">
+                      <form onSubmit={handleEmailSignIn} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-email">Email</Label>
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            data-testid="input-signin-email"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signin-password">Password</Label>
+                          <Input
+                            id="signin-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            data-testid="input-signin-password"
+                          />
+                        </div>
+                        <Button 
+                          type="submit" 
+                          className="w-full"
+                          disabled={loading}
+                          data-testid="button-signin-submit"
+                        >
+                          {loading ? "Signing in..." : "Sign In"}
+                        </Button>
+                      </form>
+                    </TabsContent>
+
+                    <TabsContent value="signup">
+                      <form onSubmit={handleEmailSignUp} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-email">Email</Label>
+                          <Input
+                            id="signup-email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            data-testid="input-signup-email"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-password">Password</Label>
+                          <Input
+                            id="signup-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            data-testid="input-signup-password"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Password must be at least 6 characters
+                          </p>
+                        </div>
+                        <Button 
+                          type="submit" 
+                          className="w-full"
+                          disabled={loading}
+                          data-testid="button-signup-submit"
+                        >
+                          {loading ? "Creating account..." : "Create Account"}
+                        </Button>
+                      </form>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleSignIn('google')}
+                      data-testid="button-login-google"
+                    >
+                      Google
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => handleSignIn('github')}
+                      data-testid="button-login-github"
+                    >
+                      GitHub
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
@@ -147,13 +329,9 @@ export default function Landing() {
               <p className="text-lg text-muted-foreground mb-8">
                 Join GoalGuard today and turn your personal growth into positive impact.
               </p>
-              <Button 
-                size="lg"
-                onClick={() => handleSignIn('google')}
-                data-testid="button-cta-login"
-              >
-                Create Your First Goal
-              </Button>
+              <p className="text-muted-foreground">
+                Scroll up to create your account and get started!
+              </p>
             </div>
           </CardContent>
         </Card>
