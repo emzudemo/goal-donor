@@ -182,6 +182,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### November 3, 2025 - Integrated Real Betterplace.org Projects
+- **Replaced placeholder organizations with real charitable projects** from betterplace.org
+- Implemented `/api/organizations/sync` endpoint to fetch 50 active projects from betterplace.org public API
+- Extended organizations schema to store rich project data:
+  - `imageUrl` - Project photos from betterplace.org
+  - `city`, `country` - Geographic location of each project
+  - `progressPercentage` - Current funding progress (0-100%)
+  - `donatedAmountInCents`, `openAmountInCents` - Financial tracking
+  - `betterplaceId` - External reference to betterplace.org project
+  - `summary`, `description` - Detailed project information
+- Enhanced `OrganizationCard` component with:
+  - Full-width project images
+  - Location display with MapPin icon
+  - Progress bars showing funding percentage
+  - Raised amount indicators
+  - Improved text truncation for better layouts
+- Added `FeaturedOrganizations` section to landing page (visible to all visitors)
+- Successfully synced 50 real projects from Germany including animal shelters, environmental initiatives, healthcare, and community development
+- **Production considerations**: Sync endpoint should be rate-limited or admin-protected in production deployments
+
 ### November 3, 2025 - Migrated to Supabase Auth
 - **Replaced Replit Auth with Supabase Auth** for portable authentication that works anywhere
 - **Email/password authentication** works immediately - no OAuth setup required!

@@ -7,6 +7,7 @@ import { Target, Heart, TrendingUp, Zap } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { FeaturedOrganizations } from "@/components/FeaturedOrganizations";
 
 export default function Landing() {
   const { toast } = useToast();
@@ -301,6 +302,9 @@ export default function Landing() {
           </Card>
         </div>
       </div>
+
+      {/* Featured Organizations */}
+      <FeaturedOrganizations />
 
       {/* Strava Integration Section */}
       <div className="bg-muted/30 py-16">
