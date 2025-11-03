@@ -131,32 +131,33 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Security
 
-**Implemented Authentication System (October 2025):**
-- **Replit Auth (OpenID Connect)** integration with multiple identity providers:
+**Current Authentication System (November 2025):**
+- **Supabase Auth** integration with OAuth providers:
   - Google Login
-  - Apple Login
   - GitHub Login
-  - X (Twitter) Login
-  - Email/Password Login
-- **Session-based authentication** using express-session with PostgreSQL session store (connect-pg-simple)
-- **Protected routes** using `isAuthenticated` middleware on all user-specific endpoints
-- **Automatic user creation** on first login via `/api/login` endpoint
-- **Secure logout** via `/api/logout` endpoint that destroys session
-- **Frontend authentication** managed by `useAuth` hook in `/client/src/hooks/useAuth.ts`
+  - Easily extensible to Apple, Facebook, Twitter, Microsoft, and 20+ other providers
+- **JWT-based authentication** using Supabase-issued tokens
+- **Protected routes** using `isAuthenticated` middleware that verifies Supabase JWTs
+- **Automatic user creation** on first login via Supabase auth callbacks
+- **Secure logout** via Supabase `signOut()` method
+- **Frontend authentication** managed by `useAuth` hook with auth state listeners
+- **Portable** - works on Replit, your own server, Vercel, Netlify, or any platform
 
 **Security Architecture:**
-- All goal, Strava, and payment endpoints protected with authentication middleware
-- User ID derived from session claims (`req.session.claims.sub`)
+- All goal, Strava, and payment endpoints protected with JWT verification middleware
+- User ID derived from Supabase JWT claims
 - Database operations automatically filter by userId to prevent cross-user data access
-- Session secret managed via SESSION_SECRET environment variable
-- HTTPS enforcement on Replit domains for OAuth redirect URIs
+- API keys managed via environment variables (SUPABASE_URL, SUPABASE_SERVICE_KEY)
+- Automatic token refresh handled by Supabase client
 
 **Authentication Files:**
-- `/server/replitAuth.ts` - Replit Auth setup and OIDC client configuration
-- `/server/routes.ts` - Auth routes and isAuthenticated middleware
-- `/client/src/hooks/useAuth.ts` - Frontend authentication state management
-- `/client/src/lib/authUtils.ts` - Auth utility functions
-- `/client/src/pages/Landing.tsx` - Landing page for logged-out users
+- `/server/supabaseAuth.ts` - Supabase Auth middleware and JWT verification
+- `/server/supabase.ts` - Supabase admin client configuration
+- `/client/src/lib/supabaseClient.ts` - Frontend Supabase client
+- `/client/src/lib/queryClient.ts` - Auto-attaches JWT to API requests
+- `/client/src/hooks/useAuth.ts` - Frontend authentication state with listeners
+- `/client/src/pages/Landing.tsx` - Landing page with OAuth login buttons
+- `/SUPABASE_SETUP.md` - Comprehensive setup guide
 
 ### Build & Deployment
 
@@ -170,13 +171,25 @@ Preferred communication style: Simple, everyday language.
 - ESBuild bundles server to `/dist/index.js`
 - Environment variables required: 
   - DATABASE_URL (PostgreSQL connection)
-  - SESSION_SECRET (session encryption)
+  - SUPABASE_URL, SUPABASE_SERVICE_KEY (backend auth)
+  - VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (frontend auth)
   - STRIPE_SECRET_KEY, VITE_STRIPE_PUBLIC_KEY (payment processing)
   - STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET (fitness tracking)
 - Single entry point starts Express server serving both API and static frontend
 - Database migrations via Drizzle Kit: `npm run db:push`
 
 ## Recent Changes
+
+### November 3, 2025 - Migrated to Supabase Auth
+- **Replaced Replit Auth with Supabase Auth** for portable authentication that works anywhere
+- Supports Google and GitHub OAuth login (easily extensible to other providers)
+- Updated frontend to use Supabase client SDK for authentication
+- Updated backend middleware to verify Supabase JWT tokens
+- Modified query client to automatically attach auth tokens to API requests
+- Added authentication state listeners for automatic re-authentication
+- Created comprehensive SUPABASE_SETUP.md guide for configuration
+- Existing database schema is fully compatible - no migrations needed
+- **Benefits**: App can now be deployed to any hosting platform (not just Replit)
 
 ### October 30, 2025 - Strava Sync Fix
 - Fixed critical bug in Strava activity sync endpoint
