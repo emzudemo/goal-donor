@@ -33,6 +33,35 @@ function validateStravaConfig() {
   }
 }
 
+// Helper function to categorize betterplace.org projects
+function determineCategory(text: string): string {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes("water") || lowerText.includes("sanitation") || lowerText.includes("trinkwasser")) {
+    return "Water & Sanitation";
+  }
+  if (lowerText.includes("education") || lowerText.includes("schul") || lowerText.includes("bildung") || lowerText.includes("lernen")) {
+    return "Education";
+  }
+  if (lowerText.includes("health") || lowerText.includes("medical") || lowerText.includes("gesundheit") || lowerText.includes("medizin")) {
+    return "Healthcare";
+  }
+  if (lowerText.includes("environment") || lowerText.includes("climate") || lowerText.includes("umwelt") || lowerText.includes("klima") || lowerText.includes("wildlife") || lowerText.includes("ocean")) {
+    return "Environment";
+  }
+  if (lowerText.includes("hunger") || lowerText.includes("food") || lowerText.includes("ernährung") || lowerText.includes("nahrung")) {
+    return "Food Security";
+  }
+  if (lowerText.includes("child") || lowerText.includes("kinder") || lowerText.includes("youth") || lowerText.includes("jugend")) {
+    return "Children & Youth";
+  }
+  if (lowerText.includes("women") || lowerText.includes("frauen") || lowerText.includes("girls") || lowerText.includes("mädchen")) {
+    return "Women's Rights";
+  }
+  
+  return "Community Development";
+}
+
 // Helper function to refresh Strava access token
 async function refreshStravaToken(refreshToken: string) {
   const response = await fetch(STRAVA_TOKEN_URL, {
@@ -90,6 +119,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(organizations);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch organizations" });
+    }
+  });
+
+  // Sync organizations from betterplace.org
+  app.post("/api/organizations/sync", async (req, res) => {
+    try {
+      console.log("Fetching projects from betterplace.org...");
+      
+      // Fetch active projects from betterplace.org
+      const response = await fetch(
+        "https://api.betterplace.org/de/api_v4/projects.json?facets=completed:false|closed:false|prohibit_donations:false&order=rank:DESC&per_page=50"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Betterplace API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log(`Received ${data.data?.length || 0} projects from betterplace.org`);
+
+      if (!data.data || data.data.length === 0) {
+        return res.json({ synced: 0, message: "No projects found" });
+      }
+
+      let syncedCount = 0;
+
+      // Process each project
+      for (const project of data.data) {
+        try {
+          const org = {
+            betterplaceId: project.id,
+            name: project.title || "Unnamed Project",
+            description: project.description || project.summary || "",
+            summary: project.summary || project.title || "",
+            mission: project.summary || project.title || "Help us make a difference",
+            category: determineCategory(project.title + " " + (project.description || "")),
+            imageUrl: project.profile_picture?.links?.[0]?.href || null,
+            city: project.city || null,
+            country: project.country || null,
+            progressPercentage: project.progress_percentage || 0,
+            donatedAmountInCents: project.donated_amount_in_cents || 0,
+            openAmountInCents: project.open_amount_in_cents || 0,
+            verified: project.closed_at || project.completed_at || project.donations_prohibited ? 0 : 1,
+          };
+
+          await storage.upsertOrganization(org);
+          syncedCount++;
+        } catch (error) {
+          console.error(`Failed to sync project ${project.id}:`, error);
+        }
+      }
+
+      console.log(`Successfully synced ${syncedCount} projects`);
+      res.json({ synced: syncedCount, total: data.data.length });
+    } catch (error) {
+      console.error("Failed to sync organizations:", error);
+      res.status(500).json({ error: "Failed to sync organizations from betterplace.org" });
     }
   });
 

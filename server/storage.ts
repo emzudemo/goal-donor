@@ -25,6 +25,7 @@ export interface IStorage {
   getAllOrganizations(): Promise<Organization[]>;
   getOrganization(id: string): Promise<Organization | undefined>;
   createOrganization(org: InsertOrganization): Promise<Organization>;
+  upsertOrganization(org: Partial<InsertOrganization> & { betterplaceId: number }): Promise<Organization>;
   
   // Goal operations - now filtered by user
   getAllGoals(userId: string): Promise<Goal[]>;
@@ -130,6 +131,21 @@ export class DatabaseStorage implements IStorage {
     const [organization] = await db
       .insert(organizations)
       .values(org)
+      .returning();
+    return organization;
+  }
+
+  async upsertOrganization(org: Partial<InsertOrganization> & { betterplaceId: number }): Promise<Organization> {
+    const [organization] = await db
+      .insert(organizations)
+      .values(org as InsertOrganization)
+      .onConflictDoUpdate({
+        target: organizations.betterplaceId,
+        set: {
+          ...org,
+          updatedAt: new Date(),
+        },
+      })
       .returning();
     return organization;
   }
