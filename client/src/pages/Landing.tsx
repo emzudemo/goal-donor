@@ -15,31 +15,6 @@ export default function Landing() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async (provider: 'google' | 'github') => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Anmeldung fehlgeschlagen",
-          description: error.message,
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Anmeldung fehlgeschlagen",
-        description: "Ein unerwarteter Fehler ist aufgetreten",
-      });
-    }
-  };
-
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -217,34 +192,6 @@ export default function Landing() {
                       </form>
                     </TabsContent>
                   </Tabs>
-
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        Oder fortfahren mit
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleSignIn('google')}
-                      data-testid="button-login-google"
-                    >
-                      Google
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleSignIn('github')}
-                      data-testid="button-login-github"
-                    >
-                      GitHub
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             </div>
