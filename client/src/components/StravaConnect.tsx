@@ -37,15 +37,15 @@ export function StravaConnect() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("strava") === "connected") {
       toast({
-        title: "Strava Connected!",
-        description: "Your Strava account has been successfully connected.",
+        title: "Strava verbunden!",
+        description: "Dein Strava-Konto wurde erfolgreich verbunden.",
       });
       window.history.replaceState({}, "", window.location.pathname);
       checkStatus();
     } else if (params.get("strava") === "error") {
       toast({
-        title: "Connection Failed",
-        description: "Failed to connect to Strava. Please try again.",
+        title: "Verbindung fehlgeschlagen",
+        description: "Verbindung zu Strava fehlgeschlagen. Bitte versuche es erneut.",
         variant: "destructive",
       });
       window.history.replaceState({}, "", window.location.pathname);
@@ -66,15 +66,15 @@ export function StravaConnect() {
       if (response.ok) {
         setStatus({ connected: false });
         toast({
-          title: "Disconnected",
-          description: "Your Strava account has been disconnected.",
+          title: "Getrennt",
+          description: "Dein Strava-Konto wurde getrennt.",
         });
       }
     } catch (error) {
       console.error("Error disconnecting Strava:", error);
       toast({
-        title: "Error",
-        description: "Failed to disconnect Strava. Please try again.",
+        title: "Fehler",
+        description: "Strava konnte nicht getrennt werden. Bitte versuche es erneut.",
         variant: "destructive",
       });
     }
@@ -90,26 +90,26 @@ export function StravaConnect() {
         {status.connected ? (
           <Badge variant="default" className="gap-1" data-testid="badge-strava-connected">
             <CheckCircle2 className="h-3 w-3" />
-            Connected
+            Verbunden
           </Badge>
         ) : (
           <Badge variant="secondary" className="gap-1" data-testid="badge-strava-disconnected">
             <XCircle className="h-3 w-3" />
-            Not Connected
+            Nicht verbunden
           </Badge>
         )}
       </CardHeader>
       <CardContent>
         <CardDescription className="mb-4">
           {status.connected
-            ? `Connected as ${status.athleteName}. Your fitness activities will automatically sync to your goals.`
-            : "Connect your Strava account to automatically track your fitness progress."}
+            ? `Verbunden als ${status.athleteName}. Deine Fitness-Aktivitäten werden automatisch mit deinen Zielen synchronisiert.`
+            : "Verbinde dein Strava-Konto, um deinen Fitness-Fortschritt automatisch zu verfolgen."}
         </CardDescription>
 
         {loading ? (
           <Button disabled data-testid="button-strava-loading">
             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            Loading...
+            Lädt...
           </Button>
         ) : status.connected ? (
           <div className="flex gap-2">
@@ -119,14 +119,14 @@ export function StravaConnect() {
               data-testid="button-strava-refresh"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Status
+              Status aktualisieren
             </Button>
             <Button
               variant="destructive"
               onClick={handleDisconnect}
               data-testid="button-strava-disconnect"
             >
-              Disconnect
+              Trennen
             </Button>
           </div>
         ) : (
@@ -136,7 +136,7 @@ export function StravaConnect() {
             data-testid="button-strava-connect"
           >
             <SiStrava className="h-4 w-4" />
-            Connect to Strava
+            Mit Strava verbinden
           </Button>
         )}
       </CardContent>

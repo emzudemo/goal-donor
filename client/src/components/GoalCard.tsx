@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, DollarSign, TrendingUp, RefreshCw } from "lucide-react";
+import { Calendar, Euro, TrendingUp, RefreshCw } from "lucide-react";
 import { SiStrava } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -48,19 +48,19 @@ export function GoalCard({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to sync");
+        throw new Error(errorData.error || "Synchronisation fehlgeschlagen");
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
       toast({
-        title: "Synced!",
-        description: "Your progress has been updated from Strava.",
+        title: "Synchronisiert!",
+        description: "Dein Fortschritt wurde von Strava aktualisiert.",
       });
     } catch (error) {
       console.error("Sync error:", error);
       toast({
-        title: "Sync Failed",
-        description: error instanceof Error ? error.message : "Failed to sync with Strava. Please try again.",
+        title: "Synchronisation fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Synchronisation mit Strava fehlgeschlagen. Bitte versuche es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -77,16 +77,16 @@ export function GoalCard({
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <CardTitle className="text-xl">{title}</CardTitle>
           <Badge variant={status === "completed" ? "default" : isUrgent ? "destructive" : "secondary"}>
-            {status === "completed" ? "Completed" : `${daysRemaining}d left`}
+            {status === "completed" ? "Abgeschlossen" : `${daysRemaining}T übrig`}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">Supporting {organization}</p>
+        <p className="text-sm text-muted-foreground">Unterstützt {organization}</p>
       </CardHeader>
       
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Progress</span>
+            <span className="font-medium">Fortschritt</span>
             <span className="text-muted-foreground">
               {progress} / {target} {unit}
             </span>
@@ -98,11 +98,11 @@ export function GoalCard({
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">{daysRemaining} days left</span>
+            <span className="text-muted-foreground">{daysRemaining} Tage übrig</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">${pledgeAmount} pledge</span>
+            <Euro className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">€{pledgeAmount} Spende</span>
           </div>
         </div>
         
@@ -115,7 +115,7 @@ export function GoalCard({
               data-testid="button-update-progress"
             >
               <TrendingUp className="h-4 w-4 mr-2" />
-              Update Progress
+              Fortschritt aktualisieren
             </Button>
             {(unit === "km" || unit === "miles") && (
               <Button
@@ -129,7 +129,7 @@ export function GoalCard({
                 ) : (
                   <SiStrava className="h-4 w-4 mr-2 text-[#FC4C02]" />
                 )}
-                {syncing ? "Syncing..." : "Sync Strava"}
+                {syncing ? "Synchronisierung..." : "Strava Sync"}
               </Button>
             )}
           </div>

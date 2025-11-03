@@ -26,15 +26,15 @@ export function UpdateProgressDialog({ open, onOpenChange, goal }: UpdateProgres
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
       toast({
-        title: "Progress updated!",
-        description: "Keep up the great work!",
+        title: "Fortschritt aktualisiert!",
+        description: "Weiter so!",
       });
       onOpenChange(false);
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update progress. Please try again.",
+        title: "Fehler",
+        description: "Fortschritt konnte nicht aktualisiert werden. Bitte versuche es erneut.",
         variant: "destructive",
       });
     },
@@ -44,8 +44,8 @@ export function UpdateProgressDialog({ open, onOpenChange, goal }: UpdateProgres
     const newProgress = parseFloat(progress);
     if (isNaN(newProgress) || newProgress < 0) {
       toast({
-        title: "Invalid progress",
-        description: "Please enter a valid number.",
+        title: "Ungültiger Fortschritt",
+        description: "Bitte gib eine gültige Zahl ein.",
         variant: "destructive",
       });
       return;
@@ -59,16 +59,16 @@ export function UpdateProgressDialog({ open, onOpenChange, goal }: UpdateProgres
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            Update Progress
+            Fortschritt aktualisieren
           </DialogTitle>
           <DialogDescription>
-            Update your progress for: {goal.title}
+            Aktualisiere deinen Fortschritt für: {goal.title}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="progress">Current Progress</Label>
+            <Label htmlFor="progress">Aktueller Fortschritt</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="progress"
@@ -76,6 +76,7 @@ export function UpdateProgressDialog({ open, onOpenChange, goal }: UpdateProgres
                 value={progress}
                 onChange={(e) => setProgress(e.target.value)}
                 data-testid="input-update-progress"
+                placeholder="Dein Fortschritt"
               />
               <span className="text-sm text-muted-foreground">/ {goal.target} {goal.unit}</span>
             </div>
@@ -83,20 +84,20 @@ export function UpdateProgressDialog({ open, onOpenChange, goal }: UpdateProgres
 
           <div className="rounded-lg bg-muted/50 p-4">
             <p className="text-sm text-muted-foreground">
-              Current: <span className="font-semibold text-foreground">{goal.progress} {goal.unit}</span>
+              Aktuell: <span className="font-semibold text-foreground">{goal.progress} {goal.unit}</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              Target: <span className="font-semibold text-foreground">{goal.target} {goal.unit}</span>
+              Ziel: <span className="font-semibold text-foreground">{goal.target} {goal.unit}</span>
             </p>
           </div>
         </div>
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-update">
-            Cancel
+            Abbrechen
           </Button>
           <Button onClick={handleSubmit} disabled={updateProgressMutation.isPending} data-testid="button-save-progress">
-            {updateProgressMutation.isPending ? "Saving..." : "Save Progress"}
+            {updateProgressMutation.isPending ? "Wird gespeichert..." : "Fortschritt speichern"}
           </Button>
         </div>
       </DialogContent>
