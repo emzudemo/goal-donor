@@ -27,15 +27,15 @@ export default function Landing() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Sign in failed",
+          title: "Anmeldung fehlgeschlagen",
           description: error.message,
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Sign in failed",
-        description: "An unexpected error occurred",
+        title: "Anmeldung fehlgeschlagen",
+        description: "Ein unerwarteter Fehler ist aufgetreten",
       });
     }
   };
@@ -56,13 +56,13 @@ export default function Landing() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Sign up failed",
+          title: "Registrierung fehlgeschlagen",
           description: error.message,
         });
       } else if (data.user) {
         toast({
-          title: "Success!",
-          description: "Please check your email to confirm your account.",
+          title: "Erfolgreich!",
+          description: "Bitte überprüfen Sie Ihre E-Mail, um Ihr Konto zu bestätigen.",
         });
         setEmail("");
         setPassword("");
@@ -70,8 +70,8 @@ export default function Landing() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Sign up failed",
-        description: "An unexpected error occurred",
+        title: "Registrierung fehlgeschlagen",
+        description: "Ein unerwarteter Fehler ist aufgetreten",
       });
     } finally {
       setLoading(false);
@@ -91,15 +91,15 @@ export default function Landing() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Sign in failed",
+          title: "Anmeldung fehlgeschlagen",
           description: error.message,
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Sign in failed",
-        description: "An unexpected error occurred",
+        title: "Anmeldung fehlgeschlagen",
+        description: "Ein unerwarteter Fehler ist aufgetreten",
       });
     } finally {
       setLoading(false);
@@ -119,34 +119,34 @@ export default function Landing() {
               GoalGuard
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Turn your goals into meaningful impact. Set personal challenges, stay accountable, 
-              and support charitable causes when you need extra motivation.
+              Verwandle deine Ziele in sinnvolle Wirkung. Setze dir persönliche Herausforderungen, 
+              bleib verantwortlich und unterstütze gemeinnützige Organisationen, wenn du zusätzliche Motivation brauchst.
             </p>
 
             {/* Authentication Card */}
             <div className="max-w-md mx-auto">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl text-center">Get Started</CardTitle>
+                  <CardTitle className="text-2xl text-center">Jetzt starten</CardTitle>
                   <CardDescription className="text-center">
-                    Sign up or sign in to start setting goals
+                    Registriere dich oder melde dich an, um Ziele zu setzen
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue="signin" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 mb-6">
-                      <TabsTrigger value="signin" data-testid="tab-signin">Sign In</TabsTrigger>
-                      <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>
+                      <TabsTrigger value="signin" data-testid="tab-signin">Anmelden</TabsTrigger>
+                      <TabsTrigger value="signup" data-testid="tab-signup">Registrieren</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="signin">
                       <form onSubmit={handleEmailSignIn} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="signin-email">Email</Label>
+                          <Label htmlFor="signin-email">E-Mail</Label>
                           <Input
                             id="signin-email"
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder="deine@email.de"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -154,11 +154,11 @@ export default function Landing() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="signin-password">Password</Label>
+                          <Label htmlFor="signin-password">Passwort</Label>
                           <Input
                             id="signin-password"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="Dein Passwort"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -171,7 +171,7 @@ export default function Landing() {
                           disabled={loading}
                           data-testid="button-signin-submit"
                         >
-                          {loading ? "Signing in..." : "Sign In"}
+                          {loading ? "Anmeldung läuft..." : "Anmelden"}
                         </Button>
                       </form>
                     </TabsContent>
@@ -179,11 +179,11 @@ export default function Landing() {
                     <TabsContent value="signup">
                       <form onSubmit={handleEmailSignUp} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="signup-email">Email</Label>
+                          <Label htmlFor="signup-email">E-Mail</Label>
                           <Input
                             id="signup-email"
                             type="email"
-                            placeholder="you@example.com"
+                            placeholder="deine@email.de"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -191,11 +191,11 @@ export default function Landing() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="signup-password">Password</Label>
+                          <Label htmlFor="signup-password">Passwort</Label>
                           <Input
                             id="signup-password"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="Wähle ein Passwort"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -203,7 +203,7 @@ export default function Landing() {
                             data-testid="input-signup-password"
                           />
                           <p className="text-xs text-muted-foreground">
-                            Password must be at least 6 characters
+                            Passwort muss mindestens 6 Zeichen lang sein
                           </p>
                         </div>
                         <Button 
@@ -212,7 +212,7 @@ export default function Landing() {
                           disabled={loading}
                           data-testid="button-signup-submit"
                         >
-                          {loading ? "Creating account..." : "Create Account"}
+                          {loading ? "Konto wird erstellt..." : "Konto erstellen"}
                         </Button>
                       </form>
                     </TabsContent>
@@ -224,7 +224,7 @@ export default function Landing() {
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
                       <span className="bg-card px-2 text-muted-foreground">
-                        Or continue with
+                        Oder fortfahren mit
                       </span>
                     </div>
                   </div>
@@ -255,9 +255,9 @@ export default function Landing() {
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-4">How It Works</h2>
+          <h2 className="text-3xl font-bold mb-4">So funktioniert es</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Set goals, track progress, and make a difference
+            Setze Ziele, verfolge deinen Fortschritt und mache einen Unterschied
           </p>
         </div>
 
@@ -267,10 +267,10 @@ export default function Landing() {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Target className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Set Your Goal</CardTitle>
+              <CardTitle>Setze dein Ziel</CardTitle>
               <CardDescription>
-                Create personal challenges with clear targets and deadlines. 
-                Track fitness, reading, learning, or any measurable goal.
+                Erstelle persönliche Herausforderungen mit klaren Zielen und Fristen. 
+                Verfolge Fitness, Lesen, Lernen oder jedes messbare Ziel.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -280,10 +280,10 @@ export default function Landing() {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <Heart className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Choose a Cause</CardTitle>
+              <CardTitle>Wähle eine Organisation</CardTitle>
               <CardDescription>
-                Select a verified charitable organization. If you don't reach your goal, 
-                your pledge supports a cause you care about.
+                Wähle eine verifizierte gemeinnützige Organisation. Wenn du dein Ziel nicht erreichst, 
+                unterstützt deine Spende einen guten Zweck, der dir am Herzen liegt.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -293,10 +293,10 @@ export default function Landing() {
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 <TrendingUp className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle>Track & Achieve</CardTitle>
+              <CardTitle>Verfolge & Erreiche</CardTitle>
               <CardDescription>
-                Monitor your progress with visual tracking. Connect Strava for automatic 
-                fitness updates and stay motivated.
+                Überwache deinen Fortschritt mit visueller Verfolgung. Verbinde Strava für automatische 
+                Fitness-Updates und bleib motiviert.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -315,10 +315,10 @@ export default function Landing() {
                 <Zap className="h-8 w-8 text-primary" />
               </div>
             </div>
-            <h2 className="text-3xl font-bold mb-4">Powered by Strava</h2>
+            <h2 className="text-3xl font-bold mb-4">Unterstützt von Strava</h2>
             <p className="text-lg text-muted-foreground mb-6">
-              Connect your Strava account for automatic activity tracking. 
-              Your runs, rides, and workouts sync seamlessly to update your fitness goals.
+              Verbinde dein Strava-Konto für automatisches Aktivitäts-Tracking. 
+              Deine Läufe, Fahrten und Workouts synchronisieren sich nahtlos, um deine Fitnessziele zu aktualisieren.
             </p>
           </div>
         </div>
@@ -329,12 +329,12 @@ export default function Landing() {
         <Card className="border-2 bg-primary/5">
           <CardContent className="pt-12 pb-12">
             <div className="text-center max-w-2xl mx-auto">
-              <h2 className="text-3xl font-bold mb-4">Ready to start?</h2>
+              <h2 className="text-3xl font-bold mb-4">Bereit anzufangen?</h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Join GoalGuard today and turn your personal growth into positive impact.
+                Tritt GoalGuard heute bei und verwandle dein persönliches Wachstum in positive Wirkung.
               </p>
               <p className="text-muted-foreground">
-                Scroll up to create your account and get started!
+                Scrolle nach oben, um dein Konto zu erstellen und loszulegen!
               </p>
             </div>
           </CardContent>
@@ -345,7 +345,7 @@ export default function Landing() {
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p>GoalGuard - Turn your goals into meaningful impact</p>
+            <p>GoalGuard - Verwandle deine Ziele in sinnvolle Wirkung</p>
           </div>
         </div>
       </footer>
