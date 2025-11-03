@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertGoalSchema, insertOrganizationSchema } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./supabaseAuth";
 import Stripe from "stripe";
 
 // Lazy initialization of Stripe to handle missing secrets gracefully
@@ -80,20 +80,8 @@ async function getValidStravaToken(userId: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup Replit Auth - supports Google, Apple, GitHub, X, email/password
+  // Setup Supabase Auth - supports Google, GitHub, and many other providers
   await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
 
   // Organizations routes (public)
   app.get("/api/organizations", async (req, res) => {
