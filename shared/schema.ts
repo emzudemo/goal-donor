@@ -30,13 +30,23 @@ export const users = pgTable("users", {
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
-// Organizations table
+// Organizations table - stores projects from betterplace.org
 export const organizations = pgTable("organizations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  betterplaceId: integer("betterplace_id").unique(),
   name: text("name").notNull(),
+  description: text("description"),
+  summary: text("summary"),
   mission: text("mission").notNull(),
   category: text("category").notNull(),
+  imageUrl: text("image_url"),
+  city: text("city"),
+  country: text("country"),
+  progressPercentage: integer("progress_percentage"),
+  donatedAmountInCents: integer("donated_amount_in_cents"),
+  openAmountInCents: integer("open_amount_in_cents"),
   verified: integer("verified").notNull().default(1),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertOrganizationSchema = createInsertSchema(organizations).omit({
