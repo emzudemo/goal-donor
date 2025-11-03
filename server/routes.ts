@@ -108,6 +108,58 @@ async function getValidStravaToken(userId: string) {
   return connection.accessToken;
 }
 
+// Helper function to sync betterplace.org projects (used by endpoint and auto-sync)
+export async function syncBetterplaceProjects() {
+  console.log("Fetching projects from betterplace.org...");
+  
+  // Fetch active projects from betterplace.org
+  const response = await fetch(
+    "https://api.betterplace.org/de/api_v4/projects.json?facets=completed:false|closed:false|prohibit_donations:false&order=rank:DESC&per_page=50"
+  );
+
+  if (!response.ok) {
+    throw new Error(`Betterplace API error: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  console.log(`Received ${data.data?.length || 0} projects from betterplace.org`);
+
+  if (!data.data || data.data.length === 0) {
+    return { synced: 0, total: 0, message: "No projects found" };
+  }
+
+  let syncedCount = 0;
+
+  // Process each project
+  for (const project of data.data) {
+    try {
+      const org = {
+        betterplaceId: project.id,
+        name: project.title || "Unnamed Project",
+        description: project.description || project.summary || "",
+        summary: project.summary || project.title || "",
+        mission: project.summary || project.title || "Help us make a difference",
+        category: determineCategory(project.title + " " + (project.description || "")),
+        imageUrl: project.profile_picture?.links?.[0]?.href || null,
+        city: project.city || null,
+        country: project.country || null,
+        progressPercentage: project.progress_percentage || 0,
+        donatedAmountInCents: project.donated_amount_in_cents || 0,
+        openAmountInCents: project.open_amount_in_cents || 0,
+        verified: project.closed_at || project.completed_at || project.donations_prohibited ? 0 : 1,
+      };
+
+      await storage.upsertOrganization(org);
+      syncedCount++;
+    } catch (error) {
+      console.error(`Failed to sync project ${project.id}:`, error);
+    }
+  }
+
+  console.log(`Successfully synced ${syncedCount} projects`);
+  return { synced: syncedCount, total: data.data.length };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Supabase Auth - supports Google, GitHub, and many other providers
   await setupAuth(app);
@@ -122,57 +174,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sync organizations from betterplace.org
-  app.post("/api/organizations/sync", async (req, res) => {
+  // Sync organizations from betterplace.org (protected endpoint)
+  app.post("/api/organizations/sync", isAuthenticated, async (req, res) => {
     try {
-      console.log("Fetching projects from betterplace.org...");
-      
-      // Fetch active projects from betterplace.org
-      const response = await fetch(
-        "https://api.betterplace.org/de/api_v4/projects.json?facets=completed:false|closed:false|prohibit_donations:false&order=rank:DESC&per_page=50"
-      );
-
-      if (!response.ok) {
-        throw new Error(`Betterplace API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log(`Received ${data.data?.length || 0} projects from betterplace.org`);
-
-      if (!data.data || data.data.length === 0) {
-        return res.json({ synced: 0, message: "No projects found" });
-      }
-
-      let syncedCount = 0;
-
-      // Process each project
-      for (const project of data.data) {
-        try {
-          const org = {
-            betterplaceId: project.id,
-            name: project.title || "Unnamed Project",
-            description: project.description || project.summary || "",
-            summary: project.summary || project.title || "",
-            mission: project.summary || project.title || "Help us make a difference",
-            category: determineCategory(project.title + " " + (project.description || "")),
-            imageUrl: project.profile_picture?.links?.[0]?.href || null,
-            city: project.city || null,
-            country: project.country || null,
-            progressPercentage: project.progress_percentage || 0,
-            donatedAmountInCents: project.donated_amount_in_cents || 0,
-            openAmountInCents: project.open_amount_in_cents || 0,
-            verified: project.closed_at || project.completed_at || project.donations_prohibited ? 0 : 1,
-          };
-
-          await storage.upsertOrganization(org);
-          syncedCount++;
-        } catch (error) {
-          console.error(`Failed to sync project ${project.id}:`, error);
-        }
-      }
-
-      console.log(`Successfully synced ${syncedCount} projects`);
-      res.json({ synced: syncedCount, total: data.data.length });
+      const result = await syncBetterplaceProjects();
+      res.json(result);
     } catch (error) {
       console.error("Failed to sync organizations:", error);
       res.status(500).json({ error: "Failed to sync organizations from betterplace.org" });

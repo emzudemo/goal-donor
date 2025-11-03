@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes, syncBetterplaceProjects } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,20 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Auto-sync betterplace.org organizations on startup if none exist
+  try {
+    const organizations = await storage.getAllOrganizations();
+    if (organizations.length === 0) {
+      log("No organizations found in database. Auto-syncing from betterplace.org...");
+      const result = await syncBetterplaceProjects();
+      log(`Auto-sync completed: ${result.synced} organizations synced`);
+    } else {
+      log(`Found ${organizations.length} organizations in database`);
+    }
+  } catch (error) {
+    log(`Warning: Failed to auto-sync organizations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
