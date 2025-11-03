@@ -2,9 +2,7 @@
 
 ## Overview
 
-GoalGuard is a web application tailored for the German market that combines personal goal tracking with charitable giving. Users set goals with deadlines, pledge donations to verified charitable organizations from betterplace.org if they fail to meet their goals, and track their progress. The platform integrates with Strava for automated fitness tracking and uses Stripe for payment processing.
-
-The application motivates users through accountability - turning personal commitments into potential charitable impact. It features a clean, motivational UI inspired by Strava, GoFundMe, and Linear's design principles. **All user interface text is in German, and the currency is Euro (€)**.
+GoalGuard is a web application designed for the German market, combining personal goal tracking with charitable giving. Users set goals with deadlines, pledging donations to verified betterplace.org charities if they fail. The platform integrates with Strava for fitness tracking and Stripe for payments, motivating users through accountability and charitable impact. The UI is clean, motivational, in German, and uses Euro (€) currency.
 
 ## User Preferences
 
@@ -14,240 +12,46 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Technology Stack:**
-- React 18 with TypeScript for type safety
-- Vite as the build tool and development server
-- Wouter for lightweight client-side routing
-- TanStack Query (React Query) for server state management and caching
-- Shadcn/ui component library built on Radix UI primitives
-- Tailwind CSS for styling with custom design system
+**Technology Stack:** React 18 (TypeScript), Vite, Wouter, TanStack Query, Shadcn/ui (Radix UI), Tailwind CSS.
 
-**Design System:**
-- Color palette centered around green (growth/achievement) with supporting colors for warnings and success states
-- Supports light and dark modes with HSL color variables
-- Inter font family for consistency across headings and body text
-- Custom CSS variables for elevation effects (hover/active states)
-- Design inspired by Strava (progress tracking), GoFundMe (trust), Duolingo (streaks), and Linear (clean dashboards)
+**Design System:** Green-centric color palette, light/dark modes (HSL variables), Inter font, custom CSS for elevation. Inspired by Strava, GoFundMe, Duolingo, and Linear.
 
-**Key Frontend Patterns:**
-- Component-based architecture with reusable UI components in `/client/src/components/ui`
-- Feature components in `/client/src/components` (Dashboard, GoalCard, etc.)
-- Page-level components in `/client/src/pages` (Landing for logged-out, Dashboard for logged-in)
-- Path aliases (@, @shared, @assets) for clean imports
-- Custom hooks for authentication (useAuth), mobile detection, and toast notifications
-- Authentication-aware routing: Landing page shown to logged-out users, Dashboard to authenticated users
+**Key Frontend Patterns:** Component-based architecture, feature components, page-level components, path aliases, custom hooks (authentication, mobile detection, toasts), authentication-aware routing.
 
 ### Backend Architecture
 
-**Technology Stack:**
-- Express.js server with TypeScript
-- Drizzle ORM for database operations
-- PostgreSQL database (via Neon serverless driver)
-- Session-based storage using connect-pg-simple
-- RESTful API design
+**Technology Stack:** Express.js (TypeScript), Drizzle ORM, PostgreSQL (Neon), connect-pg-simple, RESTful API.
 
-**Server Structure:**
-- `/server/index.ts` - Main Express application with middleware and request logging
-- `/server/routes.ts` - API route handlers for goals, organizations, Strava integration, and Stripe payments
-- `/server/storage.ts` - Data access layer with in-memory storage implementation (MemStorage)
-- `/server/vite.ts` - Development server setup with Vite middleware for HMR
+**Server Structure:** Main Express app, API route handlers for goals, organizations, Strava, Stripe; data access layer.
 
 **API Endpoints:**
-- **Authentication:**
-  - POST `/api/login` - Initiates Replit Auth OIDC flow
-  - GET `/api/logout` - Destroys session and logs out user
-  - GET `/api/auth/user` - Returns current authenticated user info
-  - GET `/api/auth/callback` - OIDC callback endpoint
-- **Goals (Protected):**
-  - GET `/api/goals` - Returns goals for authenticated user
-  - POST `/api/goals` - Creates goal for authenticated user
-  - PATCH `/api/goals/:id` - Updates goal (user ownership verified)
-  - DELETE `/api/goals/:id` - Deletes goal (user ownership verified)
-- **Organizations:**
-  - GET `/api/organizations` - Returns all verified organizations
-- **Strava (Protected):**
-  - POST `/api/strava/connect` - Initiates Strava OAuth for authenticated user
-  - GET `/api/strava/callback` - OAuth callback, stores tokens linked to userId
-  - POST `/api/strava/sync/:goalId` - Syncs Strava activities for user's goal
-- **Stripe (Protected):**
-  - POST `/api/create-payment-intent` - Creates payment intent for user's goal
+- **Authentication:** Login (Supabase OIDC), Logout, User Info, Callback.
+- **Goals (Protected):** CRUD operations.
+- **Organizations:** Retrieve all verified organizations.
+- **Strava (Protected):** Connect, Callback, Sync activities.
+- **Stripe (Protected):** Create payment intent.
 
-**Data Storage Pattern:**
-- Storage interface (IStorage) defines contract for data operations
-- DatabaseStorage implements PostgreSQL-backed persistent storage using Drizzle ORM
-- All operations automatically filter by authenticated userId for data isolation
-- Schema definitions in `/shared/schema.ts` using Drizzle and Zod
+**Data Storage Pattern:** `IStorage` interface, `DatabaseStorage` with Drizzle ORM. All operations filter by `userId`. Schema definitions in `/shared/schema.ts` with Drizzle and Zod.
 
 ### Database Schema
 
-**Core Tables:**
-- **users**: User accounts (id serial, sub text unique for OAuth, email, firstName, lastName, profileImageUrl)
-- **sessions**: Session storage (sid primary key, sess jsonb, expire timestamp) managed by connect-pg-simple
-- **organizations**: Charitable organizations (id serial, name, mission, category, verified status)
-- **goals**: User goals (id serial, userId references users.id, title, organizationId, progress, target, unit, deadline, pledgeAmount, status, stripePaymentIntentId)
-- **stravaConnections**: Strava OAuth tokens (id serial, userId references users.id, athleteId, accessToken, refreshToken, expiresAt)
-
-**Design Decisions:**
-- Serial primary keys for PostgreSQL auto-increment
-- Foreign key constraints ensure referential integrity (userId links goals and Strava connections to users)
-- Zod schemas for runtime validation of inserts
-- Separate insert and select types for type safety
-- Verified flag on organizations for trust and credibility
-- User isolation enforced at storage layer - all queries automatically filter by userId
-
-### External Dependencies
-
-**Stripe Integration:**
-- Payment processing for pledge commitments
-- Lazy initialization of Stripe client to handle missing API keys gracefully
-- Creates payment intents when goals are created
-- Charges only trigger if users fail to meet their goals by the deadline
-
-**Strava Integration:**
-- OAuth 2.0 flow for athlete authentication
-- Automatic token refresh using refresh tokens
-- Fetches athlete activities to update goal progress
-- Strava connections linked to userId in database for persistence
-- Syncs running/cycling activities with goal progress (distance-based goals)
-- Environment variables: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
-
-**Design Rationale:**
-- Strava integration provides automatic, trustworthy progress tracking for fitness goals
-- Reduces manual entry and increases engagement
-- Token refresh ensures long-term connectivity without re-authentication
-- User-specific connections enable cross-device Strava sync
-
-**Third-Party UI Libraries:**
-- Radix UI for accessible, unstyled component primitives
-- Shadcn/ui for pre-built component patterns
-- React Icons for Strava branding
-- Lucide React for general iconography
-
-**Development Tools:**
-- Replit-specific plugins for development (runtime error overlay, cartographer, dev banner)
-- TypeScript for type safety across the stack
-- ESBuild for production server bundling
-- Drizzle Kit for database migrations
+**Core Tables:** `users`, `sessions`, `organizations`, `goals`, `stravaConnections`.
+**Design Decisions:** Serial primary keys, foreign key constraints, Zod schemas for validation, user isolation, `verified` flag for organizations.
 
 ### Authentication & Security
 
-**Current Authentication System (November 2025):**
-- **Supabase Auth** integration with multiple authentication methods:
-  - **Email/Password** - Primary authentication method, works immediately
-  - Google Login (optional, requires OAuth setup)
-  - GitHub Login (optional, requires OAuth setup)
-  - Easily extensible to Apple, Facebook, Twitter, Microsoft, and 20+ other providers
-- **JWT-based authentication** using Supabase-issued tokens
-- **Email confirmation** - Secure sign-up with verification emails
-- **Protected routes** using `isAuthenticated` middleware that verifies Supabase JWTs
-- **Automatic user creation** on first login via Supabase auth callbacks
-- **Secure logout** via Supabase `signOut()` method
-- **Frontend authentication** managed by `useAuth` hook with auth state listeners
-- **Portable** - works on Replit, your own server, Vercel, Netlify, or any platform
+**Authentication System:** Supabase Auth with Email/Password (primary), optional Google/GitHub Login. JWT-based, email confirmation, protected routes with `isAuthenticated` middleware, automatic user creation, secure logout.
 
-**Security Architecture:**
-- All goal, Strava, and payment endpoints protected with JWT verification middleware
-- User ID derived from Supabase JWT claims
-- Database operations automatically filter by userId to prevent cross-user data access
-- API keys managed via environment variables (SUPABASE_URL, SUPABASE_SERVICE_KEY)
-- Automatic token refresh handled by Supabase client
+**Security Architecture:** JWT verification middleware protects endpoints, `userId` from Supabase JWTs, database operations filter by `userId`, environment variables for API keys, automatic token refresh.
 
-**Authentication Files:**
-- `/server/supabaseAuth.ts` - Supabase Auth middleware and JWT verification
-- `/server/supabase.ts` - Supabase admin client configuration
-- `/client/src/lib/supabaseClient.ts` - Frontend Supabase client
-- `/client/src/lib/queryClient.ts` - Auto-attaches JWT to API requests
-- `/client/src/hooks/useAuth.ts` - Frontend authentication state with listeners
-- `/client/src/pages/Landing.tsx` - Landing page with OAuth login buttons
-- `/SUPABASE_SETUP.md` - Comprehensive setup guide
+## External Dependencies
 
-### Build & Deployment
+**Stripe Integration:** Payment processing for pledge commitments, lazy initialization, payment intents created with goals, charges upon goal failure.
 
-**Development:**
-- Vite dev server with HMR for frontend
-- tsx for running TypeScript server files
-- Concurrent client and server development
+**Strava Integration:** OAuth 2.0 for athlete authentication, automatic token refresh, fetches activities to update goal progress, user-specific connections, syncs running/cycling activities.
 
-**Production:**
-- Vite builds frontend to `/dist/public`
-- ESBuild bundles server to `/dist/index.js`
-- Environment variables required: 
-  - DATABASE_URL (PostgreSQL connection)
-  - SUPABASE_URL, SUPABASE_SERVICE_KEY (backend auth)
-  - VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (frontend auth)
-  - STRIPE_SECRET_KEY, VITE_STRIPE_PUBLIC_KEY (payment processing)
-  - STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET (fitness tracking)
-- Single entry point starts Express server serving both API and static frontend
-- Database migrations via Drizzle Kit: `npm run db:push`
+**Betterplace.org Integration:** Fetches real charitable projects, syncs project data (images, location, funding progress, descriptions) into the `organizations` table. Auto-syncs on server startup if the database is empty.
 
-## Recent Changes
+**Third-Party UI Libraries:** Radix UI, Shadcn/ui, React Icons, Lucide React.
 
-### November 3, 2025 - Complete German Localization and Euro Currency
-- **Translated all user interface components to German** for the German market
-- **Updated currency from USD ($) to Euro (€)** throughout the application
-- Translated components:
-  - Landing page with hero section, features, authentication forms
-  - Dashboard with statistics, goal cards, and Strava integration
-  - CreateGoalDialog with 3-step goal creation flow
-  - GoalCard with progress tracking and Strava sync
-  - UpdateProgressDialog for manual progress updates
-  - StravaConnect for fitness tracker integration
-  - FeaturedOrganizations section showcasing betterplace.org projects
-  - OrganizationCard displaying project details
-- Improved input placeholders with clear examples (e.g., "Beispiel: 10" instead of just "10")
-- Changed date formatting to German locale (de-DE)
-- All toast notifications, error messages, and success messages now in German
-- Currency symbols updated from DollarSign icon to Euro icon
-- All monetary values display with € prefix instead of $ prefix
-
-### November 3, 2025 - Integrated Real Betterplace.org Projects
-- **Replaced placeholder organizations with real charitable projects** from betterplace.org
-- Implemented `/api/organizations/sync` endpoint to fetch 50 active projects from betterplace.org public API
-- Extended organizations schema to store rich project data:
-  - `imageUrl` - Project photos from betterplace.org
-  - `city`, `country` - Geographic location of each project
-  - `progressPercentage` - Current funding progress (0-100%)
-  - `donatedAmountInCents`, `openAmountInCents` - Financial tracking
-  - `betterplaceId` - External reference to betterplace.org project
-  - `summary`, `description` - Detailed project information
-- Enhanced `OrganizationCard` component with:
-  - Full-width project images
-  - Location display with MapPin icon
-  - Progress bars showing funding percentage
-  - Raised amount indicators
-  - Improved text truncation for better layouts
-- Added `FeaturedOrganizations` section to landing page (visible to all visitors)
-- Successfully synced 50 real projects from Germany including animal shelters, environmental initiatives, healthcare, and community development
-- **Production considerations**: Sync endpoint should be rate-limited or admin-protected in production deployments
-
-### November 3, 2025 - Migrated to Supabase Auth
-- **Replaced Replit Auth with Supabase Auth** for portable authentication that works anywhere
-- **Email/password authentication** works immediately - no OAuth setup required!
-- Added tabbed Sign In / Sign Up interface on landing page
-- Optional Google and GitHub OAuth login (requires additional setup)
-- Updated frontend to use Supabase client SDK for authentication
-- Updated backend middleware to verify Supabase JWT tokens
-- Modified query client to automatically attach auth tokens to API requests
-- Added authentication state listeners for automatic re-authentication
-- Created comprehensive SUPABASE_SETUP.md guide for configuration
-- Existing database schema is fully compatible - no migrations needed
-- **Benefits**: App can now be deployed to any hosting platform (not just Replit)
-
-### October 30, 2025 - Strava Sync Fix
-- Fixed critical bug in Strava activity sync endpoint
-- Changed activity fetch window from "30 days before deadline" to "from goal creation date (or last 90 days)"
-- Added `createdAt` timestamp to goals table for better tracking
-- Implemented comprehensive logging throughout sync process for debugging
-- Improved error messages (e.g., "Please connect your Strava account first")
-- Activities now sync correctly regardless of goal deadline
-
-### October 30, 2025 - Authentication & Database Persistence
-- Upgraded from in-memory storage to PostgreSQL with Drizzle ORM
-- Implemented Replit Auth with support for Google, Apple, GitHub, X, and email/password login
-- Added user accounts with session-based authentication
-- Protected all user-specific API endpoints with authentication middleware
-- Added Landing page for logged-out users with login options
-- Updated Dashboard to display user profile and logout functionality
-- Linked goals and Strava connections to user accounts via foreign keys
-- Implemented automatic user data isolation at storage layer
-- Goals and progress now persist across devices and sessions
+**Development Tools:** Replit plugins, TypeScript, ESBuild, Drizzle Kit for migrations.
