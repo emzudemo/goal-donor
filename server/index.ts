@@ -42,16 +42,19 @@ app.use((req, res, next) => {
 
   // Auto-sync betterplace.org organizations on startup if none exist
   try {
+    log("Checking organizations in database...");
     const organizations = await storage.getAllOrganizations();
     if (organizations.length === 0) {
       log("No organizations found in database. Auto-syncing from betterplace.org...");
       const result = await syncBetterplaceProjects();
-      log(`Auto-sync completed: ${result.synced} organizations synced`);
+      log(`✓ Auto-sync completed: ${result.synced} organizations synced`);
     } else {
-      log(`Found ${organizations.length} organizations in database`);
+      log(`✓ Found ${organizations.length} organizations in database`);
     }
   } catch (error) {
-    log(`Warning: Failed to auto-sync organizations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    log(`✗ Warning: Failed to auto-sync organizations: ${errorMsg}`);
+    log(`You can manually trigger sync at: GET /api/organizations/init-sync`);
   }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

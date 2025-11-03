@@ -181,7 +181,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Failed to sync organizations:", error);
-      res.status(500).json({ error: "Failed to sync organizations from betterplace.org" });
+      res.status(500).json({ 
+        error: "Failed to sync organizations from betterplace.org",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Public endpoint to trigger initial sync (for deployment setup)
+  app.get("/api/organizations/init-sync", async (req, res) => {
+    try {
+      const organizations = await storage.getAllOrganizations();
+      
+      if (organizations.length > 0) {
+        return res.json({ 
+          status: "already_synced", 
+          count: organizations.length,
+          message: `${organizations.length} Organisationen bereits vorhanden` 
+        });
+      }
+      
+      console.log("Initiating manual sync from /api/organizations/init-sync...");
+      const result = await syncBetterplaceProjects();
+      
+      res.json({ 
+        status: "synced", 
+        synced: result.synced,
+        total: result.total,
+        message: `${result.synced} Organisationen erfolgreich synchronisiert` 
+      });
+    } catch (error) {
+      console.error("Failed to sync organizations:", error);
+      res.status(500).json({ 
+        status: "error",
+        error: "Synchronisierung fehlgeschlagen",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
