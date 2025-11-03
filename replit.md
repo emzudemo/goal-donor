@@ -132,11 +132,13 @@ Preferred communication style: Simple, everyday language.
 ### Authentication & Security
 
 **Current Authentication System (November 2025):**
-- **Supabase Auth** integration with OAuth providers:
-  - Google Login
-  - GitHub Login
+- **Supabase Auth** integration with multiple authentication methods:
+  - **Email/Password** - Primary authentication method, works immediately
+  - Google Login (optional, requires OAuth setup)
+  - GitHub Login (optional, requires OAuth setup)
   - Easily extensible to Apple, Facebook, Twitter, Microsoft, and 20+ other providers
 - **JWT-based authentication** using Supabase-issued tokens
+- **Email confirmation** - Secure sign-up with verification emails
 - **Protected routes** using `isAuthenticated` middleware that verifies Supabase JWTs
 - **Automatic user creation** on first login via Supabase auth callbacks
 - **Secure logout** via Supabase `signOut()` method
@@ -182,7 +184,9 @@ Preferred communication style: Simple, everyday language.
 
 ### November 3, 2025 - Migrated to Supabase Auth
 - **Replaced Replit Auth with Supabase Auth** for portable authentication that works anywhere
-- Supports Google and GitHub OAuth login (easily extensible to other providers)
+- **Email/password authentication** works immediately - no OAuth setup required!
+- Added tabbed Sign In / Sign Up interface on landing page
+- Optional Google and GitHub OAuth login (requires additional setup)
 - Updated frontend to use Supabase client SDK for authentication
 - Updated backend middleware to verify Supabase JWT tokens
 - Modified query client to automatically attach auth tokens to API requests
