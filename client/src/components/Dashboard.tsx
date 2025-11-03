@@ -6,7 +6,7 @@ import { GoalCard } from "./GoalCard";
 import { CreateGoalDialog } from "./CreateGoalDialog";
 import { UpdateProgressDialog } from "./UpdateProgressDialog";
 import { StravaConnect } from "./StravaConnect";
-import { Plus, Target, TrendingUp, DollarSign, LogOut } from "lucide-react";
+import { Plus, Target, TrendingUp, Euro, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { type Goal, type Organization } from "@shared/schema";
@@ -27,7 +27,7 @@ export function Dashboard() {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Logout failed",
+          title: "Abmeldung fehlgeschlagen",
           description: error.message,
         });
       } else {
@@ -39,8 +39,8 @@ export function Dashboard() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Logout failed",
-        description: "An unexpected error occurred",
+        title: "Abmeldung fehlgeschlagen",
+        description: "Ein unerwarteter Fehler ist aufgetreten",
       });
     }
   };
@@ -55,7 +55,7 @@ export function Dashboard() {
 
   const getOrganizationName = (orgId: string) => {
     const org = organizations.find((o) => o.id === orgId);
-    return org?.name || "Unknown Organization";
+    return org?.name || "Unbekannte Organisation";
   };
 
   const getDaysRemaining = (deadline: Date) => {
@@ -86,7 +86,7 @@ export function Dashboard() {
   if (goalsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading goals...</p>
+        <p className="text-muted-foreground">Ziele werden geladen...</p>
       </div>
     );
   }
@@ -105,15 +105,15 @@ export function Dashboard() {
             </Avatar>
             <div>
               <h1 className="text-4xl font-bold">
-                {user?.firstName ? `${user.firstName}'s Goals` : 'My Goals'}
+                {user?.firstName ? `${user.firstName}s Ziele` : 'Meine Ziele'}
               </h1>
-              <p className="text-muted-foreground">Track your progress and make an impact</p>
+              <p className="text-muted-foreground">Verfolge deinen Fortschritt und mache einen Unterschied</p>
             </div>
           </div>
           <div className="flex gap-2">
             <Button size="lg" onClick={() => setCreateDialogOpen(true)} data-testid="button-create-goal">
               <Plus className="h-5 w-5 mr-2" />
-              Create New Goal
+              Neues Ziel erstellen
             </Button>
             <Button 
               size="lg" 
@@ -122,7 +122,7 @@ export function Dashboard() {
               data-testid="button-logout"
             >
               <LogOut className="h-5 w-5 mr-2" />
-              Logout
+              Abmelden
             </Button>
           </div>
         </div>
@@ -131,7 +131,7 @@ export function Dashboard() {
           <Card data-testid="stat-active-goals">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Active Goals
+                Aktive Ziele
               </CardTitle>
               <Target className="h-5 w-5 text-primary" />
             </CardHeader>
@@ -143,7 +143,7 @@ export function Dashboard() {
           <Card data-testid="stat-completion-rate">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Completion Rate
+                Erfolgsquote
               </CardTitle>
               <TrendingUp className="h-5 w-5 text-accent" />
             </CardHeader>
@@ -155,12 +155,12 @@ export function Dashboard() {
           <Card data-testid="stat-total-pledged">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Pledged
+                Gesamt Verpflichtet
               </CardTitle>
-              <DollarSign className="h-5 w-5 text-destructive" />
+              <Euro className="h-5 w-5 text-destructive" />
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">${totalPledged}</p>
+              <p className="text-3xl font-bold">€{totalPledged}</p>
             </CardContent>
           </Card>
         </div>
@@ -172,13 +172,13 @@ export function Dashboard() {
         {goals.length === 0 ? (
           <div className="text-center py-16">
             <Target className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-semibold mb-2">No goals yet</h2>
+            <h2 className="text-2xl font-semibold mb-2">Noch keine Ziele</h2>
             <p className="text-muted-foreground mb-6">
-              Create your first goal to start making an impact
+              Erstelle dein erstes Ziel, um einen Unterschied zu machen
             </p>
             <Button onClick={() => setCreateDialogOpen(true)} data-testid="button-create-first-goal">
               <Plus className="h-5 w-5 mr-2" />
-              Create Your First Goal
+              Erstes Ziel erstellen
             </Button>
           </div>
         ) : (

@@ -9,7 +9,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { type Organization, type InsertGoal } from "@shared/schema";
 import { OrganizationCard } from "./OrganizationCard";
-import { ArrowLeft, ArrowRight, Calendar, DollarSign } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, Euro } from "lucide-react";
 
 interface CreateGoalDialogProps {
   open: boolean;
@@ -46,7 +46,7 @@ const getDeadlineDate = (option: string): Date => {
 
 const formatDeadlineOption = (option: string): string => {
   const date = getDeadlineDate(option);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString('de-DE', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) {
@@ -74,16 +74,16 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
       toast({
-        title: "Goal created!",
-        description: "Your goal has been created successfully. Stay committed!",
+        title: "Ziel erstellt!",
+        description: "Dein Ziel wurde erfolgreich erstellt. Bleib engagiert!",
       });
       resetForm();
       onOpenChange(false);
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create goal. Please try again.",
+        title: "Fehler",
+        description: "Ziel konnte nicht erstellt werden. Bitte versuche es erneut.",
         variant: "destructive",
       });
     },
@@ -104,16 +104,16 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
   const handleNext = () => {
     if (step === 1 && (!formData.title || !formData.target || !formData.unit || !formData.deadline)) {
       toast({
-        title: "Missing information",
-        description: "Please fill in all goal details.",
+        title: "Fehlende Informationen",
+        description: "Bitte fülle alle Zieldetails aus.",
         variant: "destructive",
       });
       return;
     }
     if (step === 2 && !formData.organizationId) {
       toast({
-        title: "Select an organization",
-        description: "Please choose a charitable organization to support.",
+        title: "Organisation auswählen",
+        description: "Bitte wähle eine gemeinnützige Organisation zur Unterstützung.",
         variant: "destructive",
       });
       return;
@@ -124,8 +124,8 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
   const handleSubmit = () => {
     if (!formData.pledgeAmount || parseFloat(formData.pledgeAmount) <= 0) {
       toast({
-        title: "Invalid pledge amount",
-        description: "Please enter a valid pledge amount.",
+        title: "Ungültiger Spendenbetrag",
+        description: "Bitte gib einen gültigen Spendenbetrag ein.",
         variant: "destructive",
       });
       return;
@@ -151,9 +151,9 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Create New Goal</DialogTitle>
+          <DialogTitle className="text-2xl">Neues Ziel erstellen</DialogTitle>
           <DialogDescription>
-            Step {step} of 3: {step === 1 ? "Goal Details" : step === 2 ? "Choose Organization" : "Set Commitment"}
+            Schritt {step} von 3: {step === 1 ? "Zieldetails" : step === 2 ? "Organisation wählen" : "Verpflichtung festlegen"}
           </DialogDescription>
         </DialogHeader>
 
@@ -161,10 +161,10 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
         {step === 1 && (
           <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Goal Title</Label>
+              <Label htmlFor="title">Zieltitel</Label>
               <Input
                 id="title"
-                placeholder="e.g., Run 10km this week"
+                placeholder="z.B. 10 km diese Woche laufen"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 data-testid="input-goal-title"
@@ -173,46 +173,46 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="target">Target</Label>
+                <Label htmlFor="target">Zielwert</Label>
                 <Input
                   id="target"
                   type="number"
-                  placeholder="10"
+                  placeholder="Beispiel: 10"
                   value={formData.target}
                   onChange={(e) => setFormData({ ...formData, target: e.target.value })}
                   data-testid="input-goal-target"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit</Label>
+                <Label htmlFor="unit">Einheit</Label>
                 <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
                   <SelectTrigger data-testid="select-goal-unit">
-                    <SelectValue placeholder="Select unit" />
+                    <SelectValue placeholder="Einheit wählen" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="km">Kilometers (km)</SelectItem>
-                    <SelectItem value="miles">Miles</SelectItem>
-                    <SelectItem value="hours">Hours</SelectItem>
-                    <SelectItem value="days">Days</SelectItem>
-                    <SelectItem value="books">Books</SelectItem>
-                    <SelectItem value="workouts">Workouts</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="km">Kilometer (km)</SelectItem>
+                    <SelectItem value="miles">Meilen</SelectItem>
+                    <SelectItem value="hours">Stunden</SelectItem>
+                    <SelectItem value="days">Tage</SelectItem>
+                    <SelectItem value="books">Bücher</SelectItem>
+                    <SelectItem value="workouts">Trainingseinheiten</SelectItem>
+                    <SelectItem value="other">Andere</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deadline">Deadline</Label>
+              <Label htmlFor="deadline">Frist</Label>
               <Select value={formData.deadline} onValueChange={(value) => setFormData({ ...formData, deadline: value })}>
                 <SelectTrigger data-testid="select-goal-deadline">
-                  <SelectValue placeholder="Select deadline" />
+                  <SelectValue placeholder="Frist wählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="this-week">This Week ({formatDeadlineOption("this-week")})</SelectItem>
-                  <SelectItem value="next-week">Next Week ({formatDeadlineOption("next-week")})</SelectItem>
-                  <SelectItem value="this-month">This Month ({formatDeadlineOption("this-month")})</SelectItem>
-                  <SelectItem value="next-month">Next Month ({formatDeadlineOption("next-month")})</SelectItem>
+                  <SelectItem value="this-week">Diese Woche ({formatDeadlineOption("this-week")})</SelectItem>
+                  <SelectItem value="next-week">Nächste Woche ({formatDeadlineOption("next-week")})</SelectItem>
+                  <SelectItem value="this-month">Diesen Monat ({formatDeadlineOption("this-month")})</SelectItem>
+                  <SelectItem value="next-month">Nächsten Monat ({formatDeadlineOption("next-month")})</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -223,7 +223,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
         {step === 2 && (
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Select a charitable organization that will receive your pledge if you don't reach your goal.
+              Wähle eine gemeinnützige Organisation, die deine Spende erhält, wenn du dein Ziel nicht erreichst.
             </p>
             <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
               {organizations.map((org) => (
@@ -245,23 +245,23 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
         {step === 3 && (
           <div className="space-y-6 py-4">
             <div className="rounded-lg bg-muted/50 p-6 space-y-3">
-              <h3 className="font-semibold text-lg">Your Goal Summary</h3>
+              <h3 className="font-semibold text-lg">Deine Zielzusammenfassung</h3>
               <div className="space-y-2 text-sm">
-                <p><span className="text-muted-foreground">Goal:</span> {formData.title}</p>
-                <p><span className="text-muted-foreground">Target:</span> {formData.target} {formData.unit}</p>
-                <p><span className="text-muted-foreground">Deadline:</span> {formData.deadline ? getDeadlineDate(formData.deadline).toLocaleDateString() : ""}</p>
-                <p><span className="text-muted-foreground">Supporting:</span> {selectedOrg?.name}</p>
+                <p><span className="text-muted-foreground">Ziel:</span> {formData.title}</p>
+                <p><span className="text-muted-foreground">Zielwert:</span> {formData.target} {formData.unit}</p>
+                <p><span className="text-muted-foreground">Frist:</span> {formData.deadline ? getDeadlineDate(formData.deadline).toLocaleDateString('de-DE') : ""}</p>
+                <p><span className="text-muted-foreground">Unterstützt:</span> {selectedOrg?.name}</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pledgeAmount">Pledge Amount (USD)</Label>
+              <Label htmlFor="pledgeAmount">Spendenbetrag (EUR)</Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Euro className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="pledgeAmount"
                   type="number"
-                  placeholder="50"
+                  placeholder="Beispiel: 50"
                   className="pl-10"
                   value={formData.pledgeAmount}
                   onChange={(e) => setFormData({ ...formData, pledgeAmount: e.target.value })}
@@ -269,7 +269,7 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                This amount will be donated to {selectedOrg?.name} if you don't reach your goal by the deadline.
+                Dieser Betrag wird an {selectedOrg?.name} gespendet, wenn du dein Ziel bis zur Frist nicht erreichst.
               </p>
             </div>
           </div>
@@ -280,21 +280,21 @@ export function CreateGoalDialog({ open, onOpenChange }: CreateGoalDialogProps) 
           {step > 1 && (
             <Button variant="outline" onClick={() => setStep(step - 1)} data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Zurück
             </Button>
           )}
           <div className="ml-auto flex gap-2">
             <Button variant="ghost" onClick={() => { resetForm(); onOpenChange(false); }} data-testid="button-cancel">
-              Cancel
+              Abbrechen
             </Button>
             {step < 3 ? (
               <Button onClick={handleNext} data-testid="button-next">
-                Next
+                Weiter
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
               <Button onClick={handleSubmit} disabled={createGoalMutation.isPending} data-testid="button-create-goal">
-                {createGoalMutation.isPending ? "Creating..." : "Create Goal"}
+                {createGoalMutation.isPending ? "Wird erstellt..." : "Ziel erstellen"}
               </Button>
             )}
           </div>
