@@ -2,9 +2,9 @@
 
 ## Overview
 
-GoalGuard is a web application that combines personal goal tracking with charitable giving. Users set goals with deadlines, pledge donations to verified charitable organizations if they fail to meet their goals, and track their progress. The platform integrates with Strava for automated fitness tracking and uses Stripe for payment processing.
+GoalGuard is a web application tailored for the German market that combines personal goal tracking with charitable giving. Users set goals with deadlines, pledge donations to verified charitable organizations from betterplace.org if they fail to meet their goals, and track their progress. The platform integrates with Strava for automated fitness tracking and uses Stripe for payment processing.
 
-The application motivates users through accountability - turning personal commitments into potential charitable impact. It features a clean, motivational UI inspired by Strava, GoFundMe, and Linear's design principles.
+The application motivates users through accountability - turning personal commitments into potential charitable impact. It features a clean, motivational UI inspired by Strava, GoFundMe, and Linear's design principles. **All user interface text is in German, and the currency is Euro (€)**.
 
 ## User Preferences
 
@@ -181,6 +181,24 @@ Preferred communication style: Simple, everyday language.
 - Database migrations via Drizzle Kit: `npm run db:push`
 
 ## Recent Changes
+
+### November 3, 2025 - Complete German Localization and Euro Currency
+- **Translated all user interface components to German** for the German market
+- **Updated currency from USD ($) to Euro (€)** throughout the application
+- Translated components:
+  - Landing page with hero section, features, authentication forms
+  - Dashboard with statistics, goal cards, and Strava integration
+  - CreateGoalDialog with 3-step goal creation flow
+  - GoalCard with progress tracking and Strava sync
+  - UpdateProgressDialog for manual progress updates
+  - StravaConnect for fitness tracker integration
+  - FeaturedOrganizations section showcasing betterplace.org projects
+  - OrganizationCard displaying project details
+- Improved input placeholders with clear examples (e.g., "Beispiel: 10" instead of just "10")
+- Changed date formatting to German locale (de-DE)
+- All toast notifications, error messages, and success messages now in German
+- Currency symbols updated from DollarSign icon to Euro icon
+- All monetary values display with € prefix instead of $ prefix
 
 ### November 3, 2025 - Integrated Real Betterplace.org Projects
 - **Replaced placeholder organizations with real charitable projects** from betterplace.org
