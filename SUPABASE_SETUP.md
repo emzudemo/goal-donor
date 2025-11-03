@@ -1,6 +1,6 @@
-# Supabase Auth Setup Guide
+# Supabase Setup Guide (Auth + Database)
 
-This guide will help you set up Supabase Auth for GoalGuard, replacing the Replit Auth system.
+This guide will help you set up both Supabase Auth and Supabase Database for GoalGuard.
 
 ## Why Supabase Auth?
 
@@ -232,13 +232,70 @@ Follow similar steps to Google/GitHub for any other provider.
 
 ---
 
-## Step 7: Database Compatibility
+## Step 7: Database Setup (Using Supabase PostgreSQL)
 
-Good news! The current database schema is already compatible with Supabase Auth:
+GoalGuard ist jetzt so konfiguriert, dass es die Supabase PostgreSQL-Datenbank verwendet.
 
-- User IDs are `varchar` which works perfectly with Supabase UUIDs
-- The `users` table structure matches what Supabase provides
-- No database changes are needed!
+### Database Connection String abrufen
+
+1. Gehen Sie zu **Project Settings** → **Database** in Ihrem Supabase-Projekt
+2. Scrollen Sie zu **Connection String**
+3. Wählen Sie **URI** aus
+4. Kopieren Sie die Connection String (sieht ungefähr so aus):
+   ```
+   postgresql://postgres.xxxxxxxxxxxx:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+   ```
+
+### DATABASE_URL in Replit setzen
+
+**Für Development:**
+1. Fügen Sie in Replit Secrets die `DATABASE_URL` hinzu:
+   - Gehen Sie zu Tools → Secrets
+   - Fügen Sie einen neuen Secret hinzu:
+     - Key: `DATABASE_URL`
+     - Value: Ihre Supabase Connection String
+
+**Für Production (nach dem Publish):**
+1. Gehen Sie zu Ihrem Deployment in Replit
+2. Klicken Sie auf **Environment Variables**
+3. Fügen Sie `DATABASE_URL` mit Ihrer Supabase Connection String hinzu
+
+### Datenbank-Schema erstellen
+
+Nach dem Einrichten der DATABASE_URL:
+
+```bash
+npm run db:push
+```
+
+Dieser Befehl erstellt alle notwendigen Tabellen (users, organizations, goals, etc.) in Ihrer Supabase-Datenbank.
+
+### Betterplace.org Organisationen synchronisieren
+
+Nachdem die Tabellen erstellt wurden, starten Sie die App:
+- Die App wird automatisch 50 Organisationen von betterplace.org synchronisieren
+- Oder rufen Sie manuell auf: `GET /api/organizations/init-sync`
+
+### Wichtige Hinweise für Supabase Database
+
+**SSL-Verbindung:**
+Die App erkennt automatisch Supabase-Verbindungen und aktiviert SSL. Keine zusätzliche Konfiguration nötig!
+
+SSL wird automatisch aktiviert für:
+- Supabase-Datenbanken (supabase.co)
+- AWS RDS-Datenbanken
+- Neon-Datenbanken
+- Wenn `DATABASE_SSL=true` oder `PGSSLMODE=require` gesetzt ist
+
+**Connection Pooling:**
+Supabase bietet Connection Pooling. Die Standard-Connection String verwendet bereits Port `6543` (Transaction Mode) für optimale Performance.
+
+**Vorteile von Supabase Database:**
+- ✅ Globale Verfügbarkeit
+- ✅ Automatische Backups
+- ✅ SQL Editor im Dashboard
+- ✅ Realtime-Subscriptions (optional)
+- ✅ Gleiche Datenbank wie Ihre Auth-Daten
 
 ---
 

@@ -20,7 +20,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 
-**Technology Stack:** Express.js (TypeScript), Drizzle ORM, PostgreSQL (Neon), connect-pg-simple, RESTful API.
+**Technology Stack:** Express.js (TypeScript), Drizzle ORM, PostgreSQL (Supabase compatible), node-postgres (pg), RESTful API.
 
 **Server Structure:** Main Express app, API route handlers for goals, organizations, Strava, Stripe; data access layer.
 
@@ -57,6 +57,13 @@ Preferred communication style: Simple, everyday language.
 **Development Tools:** Replit plugins, TypeScript, ESBuild, Drizzle Kit for migrations.
 
 ## Recent Changes
+
+### November 3, 2025 - Migration to Supabase PostgreSQL Database
+- **Migrated from Neon to standard PostgreSQL** - Now compatible with Supabase Database
+- **Updated database driver** - Switched from `@neondatabase/serverless` to `pg` (node-postgres)
+- **SSL support** - Automatic SSL configuration for production environments
+- **Better compatibility** - Works with any standard PostgreSQL database (Supabase, AWS RDS, etc.)
+- **See SUPABASE_SETUP.md** - Complete guide for setting up Supabase Database connection
 
 ### November 3, 2025 - Manual Sync Fallback for Production Deployments
 - **Public init-sync endpoint** (`GET /api/organizations/init-sync`) - manual fallback for deployment setup if auto-sync fails

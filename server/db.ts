@@ -1,9 +1,6 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
-
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -11,5 +8,18 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// SSL configuration - automatically enables SSL for Supabase and other cloud databases
+const databaseUrl = process.env.DATABASE_URL;
+const needsSSL = 
+  databaseUrl.includes('supabase.co') || 
+  databaseUrl.includes('aws') ||
+  databaseUrl.includes('neon.tech') ||
+  process.env.DATABASE_SSL === 'true' ||
+  process.env.PGSSLMODE === 'require';
+
+export const pool = new Pool({ 
+  connectionString: databaseUrl,
+  ssl: needsSSL ? { rejectUnauthorized: false } : false
+});
+
+export const db = drizzle(pool, { schema });
