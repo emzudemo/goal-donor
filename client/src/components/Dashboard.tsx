@@ -10,12 +10,40 @@ import { Plus, Target, TrendingUp, DollarSign, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { type Goal, type Organization } from "@shared/schema";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Logout failed",
+          description: error.message,
+        });
+      } else {
+        // Clear all cached data
+        queryClient.clear();
+        // Reload the page to go back to landing
+        window.location.href = '/';
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Logout failed",
+        description: "An unexpected error occurred",
+      });
+    }
+  };
 
   const { data: goals = [], isLoading: goalsLoading } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
@@ -90,7 +118,7 @@ export function Dashboard() {
             <Button 
               size="lg" 
               variant="outline"
-              onClick={() => window.location.href = '/api/logout'}
+              onClick={handleLogout}
               data-testid="button-logout"
             >
               <LogOut className="h-5 w-5 mr-2" />

@@ -1,8 +1,37 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Heart, TrendingUp, Zap } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Landing() {
+  const { toast } = useToast();
+
+  const handleSignIn = async (provider: 'google' | 'github') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: error.message,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Sign in failed",
+        description: "An unexpected error occurred",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -19,21 +48,21 @@ export default function Landing() {
               Turn your goals into meaningful impact. Set personal challenges, stay accountable, 
               and support charitable causes when you need extra motivation.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center flex-wrap">
               <Button 
                 size="lg" 
-                onClick={() => window.location.href = '/api/login'}
-                data-testid="button-login"
+                onClick={() => handleSignIn('google')}
+                data-testid="button-login-google"
               >
-                Get Started
+                Sign in with Google
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => window.location.href = '/api/login'}
-                data-testid="button-signup"
+                onClick={() => handleSignIn('github')}
+                data-testid="button-login-github"
               >
-                Sign In
+                Sign in with GitHub
               </Button>
             </div>
           </div>
@@ -120,7 +149,7 @@ export default function Landing() {
               </p>
               <Button 
                 size="lg"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => handleSignIn('google')}
                 data-testid="button-cta-login"
               >
                 Create Your First Goal
